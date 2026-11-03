@@ -95,7 +95,7 @@ applyTheme();
 <b id="mt" style="font-size:16px">Add agenda</b>
 <div><label>Doc number</label><input id="fn" placeholder="Ord. No. 2026-001"></div>
 <div><label>Title / subject</label><textarea id="ft" rows="2"></textarea></div>
-<div class="g2"><div><label>Type</label><select id="fy"></select></div><div><label>Sponsor / author</label><input id="fa" placeholder="Hon. A. Reyes"></div></div>
+<div><label>Type</label><select id="fy"></select></div>
 <div class="g2"><div><label>Status</label><select id="fst"></select></div><div><label>Committee</label><select id="fc"></select></div></div>
 <div class="g2"><div><label>Date received</label><input type="date" id="fd"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
 <div><label>Session dates</label><div id="ss" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addSess()" style="margin-top:6px">+ Add session date</button></div>
@@ -142,7 +142,7 @@ opt($("fy"),TY);opt($("fst"),ST);opt($("fc"),CM);
 const dp=r=>r.filed?diff(r.filed,DONE.includes(r.status)?(r.mayor||r.stageDate||today()):today()):0;
 const ds=r=>diff(r.stageDate||r.filed,today());
 const al=r=>DONE.includes(r.status)?"Completed":ds(r)>30?"OVERDUE":"On track";
-const cols=[["no","Doc No."],["title","Title"],["type","Type"],["author","Sponsor"],["committee","Committee"],["status","Status"],["filed","Received"],["","Session dates"],["mayor","Approved"],["","Committee report"],["dp","Days in pipeline"],["ds","Days in stage"],["al","Alert"],["",""]];
+const cols=[["no","Doc No."],["title","Title"],["type","Type"], ["committee","Committee"],["status","Status"],["filed","Received"],["","Session dates"],["mayor","Approved"],["","Committee report"],["dp","Days in pipeline"],["ds","Days in stage"],["al","Alert"],["",""]];
 $("th").innerHTML=cols.map(c=>`<th onclick="${c[0]?`srt('${c[0]}')`:""}">${c[1]}</th>`).join("");
 const val=(r,k)=>k=="dp"?dp(r):k=="ds"?ds(r):k=="al"?al(r):(r[k]||"");
 function srt(k){sort=sort.k==k?{k,d:-sort.d}:{k,d:1};render()}
@@ -156,18 +156,18 @@ $("cc").innerHTML=CM.map(m=>{const l=data.filter(r=>r.committee==m),n=l.length,a
 const w=x=>x/cmx*100+"%";const avg=n?Math.round(l.reduce((s,r)=>s+dp(r),0)/n):0;
 return `<div class="br ${F.cm==m?"on":""}" style="grid-template-columns:230px 1fr 70px" onclick='setF("cm",${JSON.stringify(m)})'><span title="${esc(m)}">${esc(m)}</span><div class="tr"><i style="width:${w(a)};background:var(--c2)"></i><i style="width:${w(b)};background:var(--c1)"></i><i style="width:${w(e)};background:var(--c3)"></i><i style="width:${w(o)};background:var(--c4)"></i></div><b style="font-weight:400;color:var(--mut)">${n} · ${avg}d</b></div>`}).join("");
 const q=$("q").value.toLowerCase();
-const rows=data.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||r.committee==F.cm)&&(!q||(r.no+r.title+r.author).toLowerCase().includes(q)))
+const rows=data.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||r.committee==F.cm)&&(!q||(r.no+r.title).toLowerCase().includes(q)))
 .sort((x,y)=>{const a=val(x,sort.k),b=val(y,sort.k);return (a>b?1:a<b?-1:0)*sort.d});
 $("chips").innerHTML=(F.st?`<span class="chip" onclick="setF('st','')">${esc(F.st)} ✕</span>`:"")+(F.cm?`<span class="chip" onclick="setF('cm','')">${esc(F.cm)} ✕</span>`:"");
 $("cnt").textContent=rows.length+" of "+data.length+" shown";
 $("tb").innerHTML=rows.length?rows.map(r=>{const a=al(r),cl=a=="OVERDUE"?"o":a=="Completed"?"":"t";
-return `<tr><td><b>${esc(r.no)}</b></td><td class="t">${esc(r.title)}${r.remarks?`<br><small>${esc(r.remarks)}</small>`:""}</td><td>${esc(r.type)}</td><td>${esc(r.author)}</td><td>${esc(r.committee)}</td>
+return `<tr><td><b>${esc(r.no)}</b></td><td class="t">${esc(r.title)}${r.remarks?`<br><small>${esc(r.remarks)}</small>`:""}</td><td>${esc(r.type)}</td> <td>${esc(r.committee)}</td>
 <td><select onchange="setStatus(${r.id},this.value)">${ST.map(s=>`<option ${s==r.status?"selected":""}>${esc(s)}</option>`).join("")}</select></td>
 <td>${r.filed||"–"}</td><td>${(r.sessions||[]).map(d=>`<div>${esc(d)}</div>`).join("")||"–"}</td><td>${esc(r.mayor)||"–"}</td><td>${rep(r)}</td><td>${dp(r)}</td><td>${ds(r)}</td><td><span class="pill ${cl}">${a}</span></td>
-<td style="white-space:nowrap"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></td></tr>`}).join(""):`<tr><td colspan="14" class="empty">No measures found.</td></tr>`}
+<td style="white-space:nowrap"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></td></tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`}
 function setStatus(id,s){const r=data.find(x=>x.id==id);r.status=s;r.stageDate=today();if(APPR.includes(s)&&!r.mayor)r.mayor=today();sync(r);render()}
 function del(id){if(confirm("Delete this measure?")){const r=data.find(x=>x.id==id);data=data.filter(x=>x.id!=id);if(col)SB.from("measures").delete().eq("id",id).select().then(async({data:d,error})=>{if(error)return werr(error);console.log("row deleted:",d,"file:",r&&r.reportFile);if(r&&r.reportFile){const x=await SB.storage.from("reports").remove([r.reportFile.id]);console.log("remove file:",x)}const l=await SB.storage.from("reports").list(String(id));console.log("folder:",l);if(l.data&&l.data.length){const y=await SB.storage.from("reports").remove(l.data.map(f=>id+"/"+f.name));console.log("remove folder:",y)}});render()}}
-const M={fn:"no",ft:"title",fy:"type",fa:"author",fst:"status",fc:"committee",fd:"filed",fr:"report",fl:"reportLink",fm:"mayor",fk:"remarks"};
+const M={fn:"no",ft:"title",fy:"type",fst:"status",fc:"committee",fd:"filed",fr:"report",fl:"reportLink",fm:"mayor",fk:"remarks"};
 function openForm(id){editId=id||null;const r=id?data.find(x=>x.id==id):{filed:today(),type:TY[0],status:ST[0],committee:CM[0]};
 $("mt").textContent=id?"Edit agenda":"Add agenda";for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on")}
 function closeForm(){$("dr").classList.remove("on")}
