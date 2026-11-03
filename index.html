@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sangguniang Bayan Agenda Tracker</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--sub:#F1F3F5;--pri2:#E3E7EB;--sec:#E3E7EB;--acc:#737B86;--bg:#F7F8FA;--card:#FFFFFF;--tx:#272D35;--mut:#69727E;--bd:#E1E5EA;--pri:#626C78;--btx:#FFFFFF;--btnh:#4F5965;--lnk:#505D6C;--ring:#737B86;
+--ok:#1a7f4b;--okbg:#e3f5ec;--warn:#b42318;--warnbg:#fde8e6;--amb:#8a5a00;--ambbg:#fff3d6;--c1:#737B86;--c2:#e0a100;--c3:#1a7f4b;--c4:#69727E}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+.top{display:flex;align-items:center;gap:12px;padding:14px 24px;background:var(--sub);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.top h1{font-size:18px;margin:0;flex:1 1 260px}.top h1 small{display:block;font-weight:400;color:var(--mut);font-size:12px}
+input,select,textarea{padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;width:100%}
+.top input{width:260px}
+button{font:inherit;cursor:pointer}
+.pri{background:var(--pri);color:var(--btx);border:0;padding:9px 16px;border-radius:8px}
+.pri:hover{background:var(--btnh)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.dr .x{justify-self:end}
+.seg{display:flex;gap:6px}.seg button{flex:1;padding:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px}.seg button.on{background:var(--pri);color:var(--btx);border-color:var(--pri)}
+.tg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tc{display:grid;gap:8px;text-align:left;padding:10px;border:2px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)}.tc.on{border-color:var(--pri)}.sw{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--bd)}.sw i{flex:1}
+.ghost{background:none;border:1px solid var(--bd);color:var(--tx);padding:9px 16px;border-radius:8px}
+main{max-width:1500px;margin:0 auto;padding:20px 24px;display:grid;gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;border-left:4px solid var(--acc)}
+.kpi b{font-size:28px;display:block;line-height:1.1}.kpi span{color:var(--mut);font-size:12px}
+.kpi.w{border-left-color:var(--warn)}.kpi.w b{color:var(--warn)}
+.charts{display:grid;grid-template-columns:1fr 1.2fr;gap:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;overflow:hidden}
+.card h2{font-size:14px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+.card h2 a{font-weight:400;font-size:12px;color:var(--lnk);cursor:pointer}
+.br{display:grid;grid-template-columns:170px 1fr 28px;gap:8px;align-items:center;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px}
+.br:hover,.br.on{background:var(--pri2)}
+.tr{height:14px;background:var(--sec);border-radius:7px;overflow:hidden;display:flex}.tr i{display:block;height:100%}
+.br span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.br b{text-align:right}
+.leg{display:flex;gap:14px;font-size:11px;color:var(--mut);margin-top:8px;flex-wrap:wrap}.leg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:1000px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding:8px;border-bottom:1px solid var(--bd);cursor:pointer;white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr:hover td{background:var(--pri2)}
+td select{padding:5px;font-size:12px;width:170px}
+.t{max-width:300px}.t small{color:var(--mut)}
+.pill{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--okbg);color:var(--ok);white-space:nowrap}
+.pill.o{background:var(--warnbg);color:var(--warn)}.pill.t{background:var(--ambbg);color:var(--amb)}
+td button{background:none;border:0;color:var(--lnk);padding:2px 6px}td button.d{color:var(--warn)}td a{color:var(--lnk)}
+.chip{display:inline-block;background:var(--pri2);color:var(--lnk);border-radius:99px;padding:2px 10px;font-size:12px;margin-left:6px;cursor:pointer}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--bg);border-left:1px solid var(--bd);transform:translateX(100%);transition:transform .2s;z-index:20;padding:20px;overflow:auto;display:grid;gap:10px;align-content:start;box-shadow:-6px 0 20px #0003}
+.dr.on{transform:none}.dr label{font-size:12px;color:var(--mut);display:block;margin-bottom:3px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.empty{text-align:center;color:var(--mut);padding:30px}
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}.top input{width:100%}.br{grid-template-columns:110px 1fr 24px}}
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script><script src="config.js"></script><script>
+const K="sub pri2 sec acc bg card tx mut bd pri btx btnh lnk ring".split(" ");
+const TH=[["Classic Gray","F1F3F5 E3E7EB E3E7EB 737B86 F7F8FA FFFFFF 272D35 69727E E1E5EA 626C78 FFFFFF 4F5965 505D6C 737B86","303740 3C4652 29313A AAB4C0 171A1F 20252C ECEFF3 A5ADB8 353C46 B6C0CC 20252C D0D7DF C0C8D8 AAB4C0"],
+["Warm Stone","F5F5F4 E7E5E4 E7E5E4 78716C FAF9F7 FFFEFC 292524 78716C E7E5E4 6B625B FFFFFF 57504A 655A50 78716C","393632 49443F 302D2A C0B5AA 1C1A18 262320 F5F2EE B6AEA6 403B36 C8BDB2 292524 DDD3C9 D2C5B7 C0B5AA"],
+["Soft Greige","F1F5F4 DDE5E2 DDE5E2 70817C F7F9F8 FFFFFF 27332F 66756F DEE6E2 5F736C FFFFFF 4D6059 4E6D61 70817C","303B38 3C4A45 28322F A6BDB5 171D1B 202825 EAF0ED A6B4AE 35423D B2C8BF 202825 C9DAD3 B7D3C8 A6BDB5"],
+["Zinc Minimal","F4F4F5 E4E4E7 E4E4E7 71717A FAFAFA FFFFFF 27272A 71717A E4E4E7 62626B FFFFFF 4F4F58 52525B 71717A","333338 424249 2B2B30 B4B4BE 181818 222226 F4F4F5 A1A1AA 39393F C4C4CC 222226 DADAE0 C9C9D1 B4B4BE"],
+["Soft Taupe","F3F0EB E5DED4 E5DED4 918575 FAF8F5 FFFEFC 302825 7D7367 E7E0D7 786C5D FFFFFF 625749 655545 918575","3A342E 4B4239 302826 C8B9A5 1D1A17 27221E F3EEE7 B8ADA0 423A32 D0C1AD 27221E E0D3C2 D8C5AD C8B9A5"],
+["Slate Neutral","F3F4F6 E2E8F0 E2E8F0 647488 F8FAFC FFFFFF 273449 647488 E2E8F0 56677E FFFFFF 43546A 455D7A 647488","303849 3B4959 293340 A8B8D1 151C26 1E2835 E8EEF6 A6B3C4 344151 B6C7DB 1E2835 D0DCE9 B8D0E8 A8B8D1"],
+["Royal Blue","E5EEFF D2E1FF D7E4FC 5278D9 F7F9FC FFFFFF 263548 64748B E2E8F0 456AC7 FFFFFF 3655A5 365FBC 5278D9","29395A 374B70 253149 A5BBFF 161F30 202C40 EDF2FF A8B6D3 35435B A5BBFF 161F30 BDD0FF B5C8FF A5BBFF"],
+["Emerald Green","E1F5E8 CDEDD9 D1EEDC 269765 F7F9FC FFFFFF 263548 64748B E2E8F0 217B52 FFFFFF 196641 176B48 269765","264738 355A48 25382F 8EDCB1 151F1A 202C25 ECF8F0 A8C8B4 35483C 8EDCB1 151F1A B1EBC9 A6E5BE 8EDCB1"],
+["Orchid Purple","F3E8FF E8D5FF E9D9FA 9259D1 F7F9FC FFFFFF 263548 64748B E2E8F0 7B43B5 FFFFFF 62328F 7138AA 9259D1","3E2D56 503A6E 322541 C5A2F3 1D1726 282033 F5EEFF C3B0D8 43344F C5A2F3 1D1726 D7BEFF D2B8FA C5A2F3"],
+["Ocean Cyan","DDF7F7 C5EEEE CDEDEC 229DA4 F7F9FC FFFFFF 263548 64748B E2E8F0 167F85 FFFFFF 12676C 116C73 229DA4","24484A 305B5E 203A3C 83D8DB 142020 1E2D30 E8FAFA A6CDCF 30484A 83D8DB 142020 A5E8E9 9DE5E7 83D8DB"],
+["Coral Red","FCE8E6 F8D4D0 F7D9D6 D65C55 F7F9FC FFFFFF 263548 64748B E2E8F0 B7433E FFFFFF 963531 A43B36 D65C55","522F30 693B3B 412526 F2A29D 221617 2D2021 FDF0EF D8B0AE 4A3434 F2A29D 221617 F8C2BD F6B4B0 F2A29D"],
+["Rose Pink","FCE7F3 F9D5E8 F8D9E9 D65A96 F7F9FC FFFFFF 263548 64748B E2E8F0 B63E7B FFFFFF 983264 A52F6D D65A96","503044 674058 422A39 F0A4CA 21171E 2B2028 FBEFF5 D6AFC4 483342 F0A4CA 21171E F6C1DE F3B2D5 F0A4CA"],
+["Sunset Orange","FFF0D9 FFE3BC F8E3C6 D98B26 F7F9FC FFFFFF 263548 64748B E2E8F0 A96512 FFFFFF 89510D 97590E D98B26","523D27 6B4B2B 41301F F4BE79 211B14 2D251D FFF4E6 D8BE9D 4C3B2A F4BE79 211B14 FFD5A0 FFD09A F4BE79"]];
+const SEM={light:{ok:"#1a7f4b",okbg:"#e3f5ec",warn:"#b42318",warnbg:"#fde8e6",amb:"#8a5a00",ambbg:"#fff3d6",c2:"#e0a100",c3:"#1a7f4b"},dark:{ok:"#5cd18f",okbg:"#17382a",warn:"#ff8a80",warnbg:"#4a201d",amb:"#f0c060",ambbg:"#40330f",c2:"#f0c060",c3:"#5cd18f"}};
+let S={t:0,m:"auto"};try{S=Object.assign(S,JSON.parse(localStorage.getItem("sbtheme")||"{}"))}catch(e){}
+const mq=matchMedia("(prefers-color-scheme: dark)");
+const eff=()=>S.m=="auto"?(mq.matches?"dark":"light"):S.m;
+function applyTheme(){const r=document.documentElement,e=eff(),v=TH[S.t][e=="dark"?2:1].split(" ");
+K.forEach((k,i)=>r.style.setProperty("--"+k,"#"+v[i]));
+for(const k in SEM[e])r.style.setProperty("--"+k,SEM[e][k]);
+r.style.setProperty("--c1","#"+v[3]);r.style.setProperty("--c4","#"+v[7]);r.style.colorScheme=e;r.dataset.theme=e;
+const b=document.getElementById("tpb");if(b)buildTP()}
+function saveTheme(){try{localStorage.setItem("sbtheme",JSON.stringify(S))}catch(e){}}
+mq.addEventListener&&mq.addEventListener("change",()=>{if(S.m=="auto")applyTheme()});
+applyTheme();
+</script></head><body>
+<div class="top"><h1>Sangguniang Bayan Agenda Tracker<small>Track agenda items from filing to final action</small></h1>
+<input id="q" placeholder="Search number, title, author…" oninput="render()">
+<button class="ghost" id="so" hidden onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button><button class="ghost" onclick="openTP()">&#127912; Customize</button><button class="pri" onclick="openForm()">+ Add Agenda</button></div>
+<main>
+<div class="kpis" id="kpis"></div>
+<div class="charts">
+<div class="card"><h2>Pipeline by stage <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div></div>
+<div class="card"><h2>Committee workload <a onclick="setF('cm','')">Clear filter</a></h2><div id="cc"></div>
+<div class="leg"><span><i style="background:var(--c2)"></i>Pending / revision</span><span><i style="background:var(--c1)"></i>In session / for approval</span><span><i style="background:var(--c3)"></i>Approved / implemented</span><span><i style="background:var(--c4)"></i>Other</span></div></div>
+</div>
+<div class="card"><h2><span>Legislative register <span id="chips"></span></span><span style="font-weight:400;color:var(--mut);font-size:12px" id="cnt"></span></h2>
+<div class="tw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div></div>
+</main>
+<div class="dr" id="dr">
+<b id="mt" style="font-size:16px">Add agenda</b>
+<div><label>Doc number</label><input id="fn" placeholder="Ord. No. 2026-001"></div>
+<div><label>Title / subject</label><textarea id="ft" rows="2"></textarea></div>
+<div class="g2"><div><label>Type</label><select id="fy"></select></div><div><label>Sponsor / author</label><input id="fa" placeholder="Hon. A. Reyes"></div></div>
+<div class="g2"><div><label>Status</label><select id="fst"></select></div><div><label>Committee</label><select id="fc"></select></div></div>
+<div class="g2"><div><label>Date received</label><input type="date" id="fd"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
+<div><label>Session dates</label><div id="ss" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addSess()" style="margin-top:6px">+ Add session date</button></div>
+<div class="g2"><div><label>Committee report no.</label><input id="fr" placeholder="CR-2026-04"></div><div><label>Committee report link</label><input id="fl" type="url" placeholder="https://… (Drive, OneDrive, etc.)"></div></div>
+<div id="fup"><label>Committee report file</label><input type="file" id="ff" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"><div id="fcur" style="font-size:12px;color:var(--mut);margin-top:4px"></div></div>
+<div><label>Remarks / next steps</label><textarea id="fk" rows="3"></textarea></div>
+<button class="pri" onclick="save()">Save</button><button class="ghost" onclick="closeForm()">Cancel</button>
+</div>
+<div class="dr" id="tp"><b style="font-size:16px">Customize appearance</b>
+<div id="tpb" style="display:grid;gap:12px"></div><button class="ghost" onclick="closeTP()">Close</button></div>
+<div class="dr" id="lg"><b style="font-size:16px">Staff sign in</b>
+<div><label>Email</label><input id="le" type="email" autocomplete="username"></div>
+<div><label>Password</label><input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key=='Enter')login()"></div>
+<button class="pri" onclick="login()">Sign in</button></div>
+<script>
+function buildTP(){const e=eff(),ix=e=="dark"?2:1;
+document.getElementById("tpb").innerHTML=`<div><label>Display mode</label><div class="seg">${[["auto","Auto"],["light","Light"],["dark","Dark"]].map(m=>`<button class="${S.m==m[0]?"on":""}" onclick="setMode('${m[0]}')">${m[1]}</button>`).join("")}</div></div>
+<div><label>Color theme</label><div class="tg">${TH.map((t,i)=>{const v=t[ix].split(" ");return `<button class="tc ${S.t==i?"on":""}" onclick="setTheme(${i})"><span class="sw">${[4,5,3,9,6].map(n=>`<i style="background:#${v[n]}"></i>`).join("")}</span><span>${String.fromCharCode(65+i)}. ${t[0]}</span></button>`}).join("")}</div></div>`}
+function setMode(m){S.m=m;saveTheme();applyTheme()}
+function setTheme(i){S.t=i;saveTheme();applyTheme()}
+function openTP(){buildTP();document.getElementById("tp").classList.add("on")}
+function closeTP(){document.getElementById("tp").classList.remove("on")}
+const ST=["Received","1st Read (Session)","2nd Read / Deliberated","Pending / For Revision","For Approval","Approved","Implemented / Released","Deferred / Tabled / Suspended","Repealed"];
+const CM=["Finance, Budget and Appropriations","Housing and Land Use","Barangay Affairs & Boundary Disputes","Good Government, Public Ethics and Accountability","Rules, Resolutions and Ordinances","Health, Sanitation and Nutrition","Transportation","Infrastructure and Public Works","Peace and Order, Security and Human Rights","Education, Culture and Arts","Agriculture, Trade and Industry","Cooperatives","Ways and Means","Women, Family and Social Services","Youth and Sports Development","Environmental Protection and Natural Resources","Tourism","Local Economic Enterprises (Waterworks, Market, Slaughterhouse & Cemetery)","Project Monitoring & Oversight","Games and Amusement","Communication and Information Technology","Disaster Preparedness and Resiliency"];
+const TY=["Ordinance","Resolution","Executive Order"];
+const DONE=["Approved","Implemented / Released","Deferred / Tabled / Suspended","Repealed"],PEND=["Pending / For Revision"],APPR=["Approved","Implemented / Released"],FLOOR=["1st Read (Session)","2nd Read / Deliberated","For Approval"];
+const LEG={"2nd Read (Session)":"2nd Read / Deliberated","Deliberated":"2nd Read / Deliberated","Pending":"Pending / For Revision","For Revision":"Pending / For Revision","Revised":"Pending / For Revision","Pending Approval":"For Approval","Implemented":"Implemented / Released","Released":"Implemented / Released","Table Out":"Deferred / Tabled / Suspended","Deferred":"Deferred / Tabled / Suspended","Suspended":"Deferred / Tabled / Suspended","Filed / First Reading":"Received","Referred to Committee":"Pending / For Revision","Under Committee Review":"Pending / For Revision","Committee Report Ready":"For Approval","Second Reading / Debate":"2nd Read / Deliberated","Third & Final Reading":"2nd Read / Deliberated","Transmitted to Mayor":"For Approval","Approved / Enacted":"Approved","Vetoed / Deferred":"Deferred / Tabled / Suspended"};
+const norm=r=>{if(LEG[r.status])r.status=LEG[r.status];return r};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const today=()=>iso(new Date());
+const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return iso(d)};
+const diff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
+let AS=null,sess=[],col=null,local=true,data=[],editId=null,F={st:"",cm:""},sort={k:"filed",d:-1};
+try{data=JSON.parse(localStorage.getItem("sbtracker")||"[]");data.forEach(norm)}catch(e){}
+if(0)data=[
+{id:1,no:"Ord. No. 2026-001",title:"Barangay Waste Segregation Ordinance",type:"Ordinance",author:"Hon. A. Reyes",status:"Under Committee Review",committee:"Agriculture & Environment",filed:ago(60),stageDate:ago(42),target:"",report:"",mayor:"",remarks:"Public hearing scheduled"},
+{id:2,no:"Res. No. 2026-088",title:"Resolution requesting road repair funds",type:"Resolution",author:"Hon. M. Cruz",status:"Committee Report Ready",committee:"Public Works",filed:ago(25),stageDate:ago(5),target:ago(-7),report:"CR-2026-04",mayor:"",remarks:""},
+{id:3,no:"Ord. No. 2026-002",title:"Annual Appropriation Ordinance FY 2027",type:"Ordinance",author:"Hon. L. Santos",status:"Approved / Enacted",committee:"Finance & Appropriations",filed:ago(90),stageDate:ago(10),target:"",report:"CR-2026-01",mayor:ago(10),remarks:"Signed by Mayor"}];
+const persist=()=>{if(local)try{localStorage.setItem("sbtracker",JSON.stringify(data))}catch(e){}};
+const opt=(s,a)=>s.innerHTML=a.map(x=>`<option>${esc(x)}</option>`).join("");
+opt($("fy"),TY);opt($("fst"),ST);opt($("fc"),CM);
+const dp=r=>r.filed?diff(r.filed,DONE.includes(r.status)?(r.mayor||r.stageDate||today()):today()):0;
+const ds=r=>diff(r.stageDate||r.filed,today());
+const al=r=>DONE.includes(r.status)?"Completed":ds(r)>30?"OVERDUE":"On track";
+const cols=[["no","Doc No."],["title","Title"],["type","Type"],["author","Sponsor"],["committee","Committee"],["status","Status"],["filed","Received"],["","Session dates"],["mayor","Approved"],["","Committee report"],["dp","Days in pipeline"],["ds","Days in stage"],["al","Alert"],["",""]];
+$("th").innerHTML=cols.map(c=>`<th onclick="${c[0]?`srt('${c[0]}')`:""}">${c[1]}</th>`).join("");
+const val=(r,k)=>k=="dp"?dp(r):k=="ds"?ds(r):k=="al"?al(r):(r[k]||"");
+function srt(k){sort=sort.k==k?{k,d:-sort.d}:{k,d:1};render()}
+function setF(t,v){F[t]=F[t]==v?"":v;render()}
+function render(){persist();const c=f=>data.filter(f).length;
+$("kpis").innerHTML=[["Total agenda received",data.length],["Pending / for revision",c(r=>PEND.includes(r.status))],["For approval",c(r=>r.status=="For Approval")],["Approved / implemented",c(r=>APPR.includes(r.status))],["Overdue (>30 days in stage)",c(r=>al(r)=="OVERDUE"),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
+const mx=Math.max(1,...ST.map(s=>c(r=>r.status==s)));
+$("cs").innerHTML=ST.map(s=>{const n=c(r=>r.status==s);return `<div class="br ${F.st==s?"on":""}" onclick='setF("st",${JSON.stringify(s)})'><span>${esc(s)}</span><div class="tr"><i style="width:${n/mx*100}%;background:var(--c1)"></i></div><b>${n}</b></div>`}).join("");
+const cmx=Math.max(1,...CM.map(m=>c(r=>r.committee==m)));
+$("cc").innerHTML=CM.map(m=>{const l=data.filter(r=>r.committee==m),n=l.length,a=l.filter(r=>PEND.includes(r.status)).length,e=l.filter(r=>APPR.includes(r.status)).length,b=l.filter(r=>FLOOR.includes(r.status)).length,o=n-a-e-b;
+const w=x=>x/cmx*100+"%";const avg=n?Math.round(l.reduce((s,r)=>s+dp(r),0)/n):0;
+return `<div class="br ${F.cm==m?"on":""}" style="grid-template-columns:230px 1fr 70px" onclick='setF("cm",${JSON.stringify(m)})'><span title="${esc(m)}">${esc(m)}</span><div class="tr"><i style="width:${w(a)};background:var(--c2)"></i><i style="width:${w(b)};background:var(--c1)"></i><i style="width:${w(e)};background:var(--c3)"></i><i style="width:${w(o)};background:var(--c4)"></i></div><b style="font-weight:400;color:var(--mut)">${n} · ${avg}d</b></div>`}).join("");
+const q=$("q").value.toLowerCase();
+const rows=data.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||r.committee==F.cm)&&(!q||(r.no+r.title+r.author).toLowerCase().includes(q)))
+.sort((x,y)=>{const a=val(x,sort.k),b=val(y,sort.k);return (a>b?1:a<b?-1:0)*sort.d});
+$("chips").innerHTML=(F.st?`<span class="chip" onclick="setF('st','')">${esc(F.st)} ✕</span>`:"")+(F.cm?`<span class="chip" onclick="setF('cm','')">${esc(F.cm)} ✕</span>`:"");
+$("cnt").textContent=rows.length+" of "+data.length+" shown";
+$("tb").innerHTML=rows.length?rows.map(r=>{const a=al(r),cl=a=="OVERDUE"?"o":a=="Completed"?"":"t";
+return `<tr><td><b>${esc(r.no)}</b></td><td class="t">${esc(r.title)}${r.remarks?`<br><small>${esc(r.remarks)}</small>`:""}</td><td>${esc(r.type)}</td><td>${esc(r.author)}</td><td>${esc(r.committee)}</td>
+<td><select onchange="setStatus(${r.id},this.value)">${ST.map(s=>`<option ${s==r.status?"selected":""}>${esc(s)}</option>`).join("")}</select></td>
+<td>${r.filed||"–"}</td><td>${(r.sessions||[]).map(d=>`<div>${esc(d)}</div>`).join("")||"–"}</td><td>${esc(r.mayor)||"–"}</td><td>${rep(r)}</td><td>${dp(r)}</td><td>${ds(r)}</td><td><span class="pill ${cl}">${a}</span></td>
+<td style="white-space:nowrap"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></td></tr>`}).join(""):`<tr><td colspan="14" class="empty">No measures found.</td></tr>`}
+function setStatus(id,s){const r=data.find(x=>x.id==id);r.status=s;r.stageDate=today();if(APPR.includes(s)&&!r.mayor)r.mayor=today();sync(r);render()}
+function del(id){if(confirm("Delete this measure?")){data=data.filter(x=>x.id!=id);if(col)SB.from("measures").delete().eq("id",id).then(({error})=>error&&werr(error));render()}}
+const M={fn:"no",ft:"title",fy:"type",fa:"author",fst:"status",fc:"committee",fd:"filed",fr:"report",fl:"reportLink",fm:"mayor",fk:"remarks"};
+function openForm(id){editId=id||null;const r=id?data.find(x=>x.id==id):{filed:today(),type:TY[0],status:ST[0],committee:CM[0]};
+$("mt").textContent=id?"Edit agenda":"Add agenda";for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on")}
+function closeForm(){$("dr").classList.remove("on")}
+async function save(){if(!$("fn").value.trim()||!$("ft").value.trim()){alert("Doc number and title are required.");return}
+const r=editId?data.find(x=>x.id==editId):{id:Date.now(),stageDate:today()};const old=r.status;
+for(const k in M)r[M[k]]=$(k).value.trim();r.sessions=sess.filter(Boolean).sort();delete r.target;const fl=$("ff").files[0];if(fl&&AS){try{const u=await AS.upload(fl);r.reportFile={id:u.id,name:fl.name}}catch(e){alert("File upload failed: "+((e&&e.message)||"not permitted"))}}if(old!==r.status)r.stageDate=today();
+if(!editId)data.unshift(r);sync(r);closeForm();render()}
+function rep(r){const a=[];if(r.report)a.push(esc(r.report));if(r.reportLink&&/^https?:\/\//i.test(r.reportLink))a.push(`<a href="${esc(r.reportLink)}" target="_blank" rel="noopener">Link</a>`);if(r.reportFile)a.push(`<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>`);return a.join("<br>")||"–"}
+function drawSess(){$("ss").innerHTML=sess.map((d,i)=>`<div style="display:flex;gap:6px"><input type="date" value="${esc(d)}" onchange="sess[${i}]=this.value"><button type="button" class="ghost" onclick="sess.splice(${i},1);drawSess()">✕</button></div>`).join("")||'<small style="color:var(--mut)">No session dates yet</small>'}
+function addSess(){sess.push(today());drawSess()}
+function werr(e){alert("Could not save: "+((e&&e.message)||"you do not have permission to edit."))}
+const SB=supabase.createClient(SB_CONFIG.url,SB_CONFIG.key);
+const toRow=r=>({id:r.id,no:r.no,title:r.title,type:r.type,author:r.author,status:r.status,committee:r.committee,filed:r.filed||null,stage_date:r.stageDate||null,mayor:r.mayor||null,report:r.report||null,report_link:r.reportLink||null,report_file:r.reportFile||null,remarks:r.remarks||null,sessions:r.sessions||[],updated_at:new Date().toISOString()});
+const fromRow=x=>norm({id:x.id,no:x.no,title:x.title,type:x.type,author:x.author,status:x.status,committee:x.committee,filed:x.filed||"",stageDate:x.stage_date||"",mayor:x.mayor||"",report:x.report||"",reportLink:x.report_link||"",reportFile:x.report_file,remarks:x.remarks||"",sessions:x.sessions||[]});
+function sync(r){if(col)SB.from("measures").upsert(toRow(r)).then(({error})=>error&&werr(error))}
+async function load(){const{data:d,error}=await SB.from("measures").select("*");if(error){werr(error);return}data=d.map(fromRow);render()}
+async function openFile(p){const{data:d,error}=await SB.storage.from("reports").createSignedUrl(p,300);if(error)return werr(error);window.open(d.signedUrl,"_blank","noopener")}
+AS={upload:async f=>{const p=Date.now()+"_"+f.name.replace(/[^\w.\-]/g,"_");const{error}=await SB.storage.from("reports").upload(p,f);if(error)throw error;return{id:p}}};
+function showLogin(){$("lg").classList.add("on")}
+async function login(){const{error}=await SB.auth.signInWithPassword({email:$("le").value.trim(),password:$("lp").value});if(error){alert(error.message);return}$("lg").classList.remove("on");boot()}
+async function boot(){col=true;local=false;$("so").hidden=false;await load();
+try{const l=JSON.parse(localStorage.getItem("sbtracker")||"[]");if(l.length&&!data.length&&confirm("Import "+l.length+" entries saved in this browser to the cloud?")){const{error}=await SB.from("measures").upsert(l.map(x=>toRow(norm({...x,reportFile:null}))));if(error)werr(error);else await load()}}catch(e){}
+SB.channel("measures-live").on("postgres_changes",{event:"*",schema:"public",table:"measures"},load).subscribe()}
+render();
+if(/YOUR-/.test(SB_CONFIG.url))alert("Edit config.js and add your Supabase project URL and anon key.");
+else SB.auth.getSession().then(({data:{session}})=>session?boot():showLogin());
+</script></body></html>
