@@ -39,7 +39,7 @@ tbody tr:hover td{background:var(--pri2)}
 td select{padding:5px;font-size:13px;width:210px}
 .t{min-width:380px;max-width:600px}.t small{color:var(--mut);font-size:13px}
 .pill{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--okbg);color:var(--ok);white-space:nowrap}
-.pill.o{background:var(--warnbg);color:var(--warn)}.pill.t{background:var(--ambbg);color:var(--amb)}
+.pill.o{background:var(--warnbg);color:var(--warn)}.pill.t{background:var(--ambbg);color:var(--amb)}.pill.n{background:var(--pri2);color:var(--tx)}
 td button{background:none;border:0;color:var(--lnk);padding:2px 6px}td button.d{color:var(--warn)}td a{color:var(--lnk)}
 .chip{display:inline-block;background:var(--pri2);color:var(--lnk);border-radius:99px;padding:2px 10px;font-size:12px;margin-left:6px;cursor:pointer}
 .dr{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--bg);border-left:1px solid var(--bd);transform:translateX(100%);transition:transform .2s;z-index:20;padding:20px;overflow:auto;display:grid;gap:10px;align-content:start;box-shadow:-6px 0 20px #0003}
@@ -101,7 +101,7 @@ applyTheme();
 <div class="card"><h2>Committee Workload</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Committee</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="cc"></tbody></table></div></div>
 </div>
 <div class="pg" id="p2">
-<div class="card"><h2>Pipeline by Stage <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div><div class="leg"><span>Red tag = overdue (more than 30 days in the same stage)</span></div></div>
+<div class="card"><h2>Pipeline by Stage <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div><div class="leg"><span>Red tag = overdue (more than 30 days since the document was received)</span></div></div>
 <div class="card"><h2><span>Legislative Register <span id="chips"></span></span><span style="display:flex;gap:12px;align-items:center"><button class="ghost" id="bd" hidden onclick="delSel()" style="padding:6px 12px;color:var(--warn);border-color:var(--warn)">Delete selected</button><span style="font-weight:400;font-size:13px;color:var(--mut)" id="cnt"></span></span></h2>
 <div class="tw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div></div>
 </div>
@@ -145,7 +145,7 @@ const TYG=[["1. Legislative Documents",["Proposed Ordinance","Proposed Resolutio
 ["7. Administrative and Case Documents",["Administrative Complaint","Answer or Counter-Affidavit","Motion or Manifestation","Notice of Hearing","Summons or Subpoena","Evidence or Supporting Documents"]],
 ["8. Other Documents",["Endorsement for Appropriate Action","Application","Certification","Clearance","Manifestation of Support","Other Supporting Documents"]]];
 const TY=TYG.flatMap(g=>g[1]);
-const DONE=["Approved","Deferred","Tabled","Suspended","Disapproved","Implemented / Released","Repealed","Completed / Filed"],APPR=["Approved","Implemented / Released"];
+const FINAL=["Approved","Disapproved","Repealed","Implemented / Released","Completed / Filed"],APPR=["Approved","Implemented / Released"];
 const LEG={"1st Read (Session)":"1st Reading (Session)","2nd Read (Session)":"2nd Reading / Deliberated","2nd Read / Deliberated":"2nd Reading / Deliberated","Deliberated":"2nd Reading / Deliberated","Pending / For Revision":"Pending","Revised":"For Revision","Pending Approval":"For Approval","Implemented":"Implemented / Released","Released":"Implemented / Released","Table Out":"Tabled","Deferred / Tabled / Suspended":"Deferred","Filed / First Reading":"Received","Referred to Committee":"Pending","Under Committee Review":"Pending","Committee Report Ready":"For Approval","Second Reading / Debate":"2nd Reading / Deliberated","Third & Final Reading":"2nd Reading / Deliberated","Transmitted to Mayor":"For Approval","Approved / Enacted":"Approved","Vetoed / Deferred":"Deferred"};
 const norm=r=>{if(LEG[r.status])r.status=LEG[r.status];return r};
 const cms=r=>r.committees&&r.committees.length?r.committees:(r.committee?String(r.committee).split(/\s*;\s*/).filter(Boolean):[]);
@@ -160,17 +160,24 @@ try{data=JSON.parse(localStorage.getItem("sbtracker")||"[]");data.forEach(norm)}
 const persist=()=>{if(local)try{localStorage.setItem("sbtracker",JSON.stringify(data))}catch(e){}};
 const opt=(s,a)=>s.innerHTML=a.map(x=>`<option>${esc(x)}</option>`).join("");
 $("fy").innerHTML=TYG.map(g=>`<optgroup label="${esc(g[0])}">${g[1].map(x=>`<option>${esc(x)}</option>`).join("")}</optgroup>`).join("");opt($("fst"),ST);
-const dp=r=>r.filed?diff(r.filed,DONE.includes(r.status)?(r.mayor||r.stageDate||today()):today()):0;
-const ds=r=>diff(r.stageDate||r.filed,today());
-const al=r=>DONE.includes(r.status)?"Completed":ds(r)>30?"OVERDUE":"On track";
-const cols=[["title","Title"],["type","Type"],["author","From"],["committee","Committee"],["status","Status"],["filed","Received"],["","Session dates"],["mayor","Approved"],["","Committee report"],["dp","Days in pipeline"],["al","Alert"],["",""]];
+// Days in Pipeline = calendar days since the ORIGINAL Received date. Status changes never reset it.
+// Finalized documents stop counting on their end date (approval date, else the date the final status was set).
+const isFinal=r=>FINAL.includes(r.status);
+const dp=r=>{if(!r.filed)return null;const end=isFinal(r)?(r.mayor||r.stageDate||today()):today();return Math.max(0,diff(r.filed,end))};
+// Days in Current Stage = separate monitoring metric (resets on every status change). Not used for alerts.
+const ds=r=>isFinal(r)?null:Math.max(0,diff(r.stageDate||r.filed||today(),today()));
+const AL={ok:"On Track",warn:"Approaching Deadline",od:"Overdue",done:"Completed",none:"No Received Date"};
+// 0-15 On Track | 16-30 Approaching Deadline | 31+ Overdue | finalized = Completed (no alerts)
+const al=r=>{if(isFinal(r))return AL.done;const d=dp(r);if(d===null)return AL.none;return d>30?AL.od:d>15?AL.warn:AL.ok};
+const alCls=a=>a==AL.od?"o":a==AL.warn?"t":a==AL.ok?"":"n";
+const cols=[["title","Title"],["type","Type"],["author","From"],["committee","Committee"],["status","Status"],["filed","Received"],["","Session dates"],["mayor","Approved"],["","Committee report"],["dp","Days in pipeline"],["ds","Days in stage"],["al","Alert"],["",""]];
 $("th").innerHTML='<th><input type="checkbox" id="sa" onchange="selAll(this.checked)"></th>'+cols.map(c=>`<th onclick="${c[0]?`srt('${c[0]}')`:""}">${c[1]}</th>`).join("");
-const val=(r,k)=>k=="dp"?dp(r):k=="ds"?ds(r):k=="al"?al(r):(r[k]||"");
+const val=(r,k)=>k=="dp"?(dp(r)??-1):k=="ds"?(ds(r)??-1):k=="al"?al(r):(r[k]||"");
 function srt(k){sort=sort.k==k?{k,d:-sort.d}:{k,d:1};render()}
 function setF(t,v){F[t]=F[t]==v?"":v;render()}
 function render(){persist();const c=f=>data.filter(f).length;
-$("kpis").innerHTML=[["Total Agenda Received",data.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (>30 days in stage)",c(r=>al(r)=="OVERDUE"),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
-const od=s=>c(r=>r.status==s&&al(r)=="OVERDUE");
+$("kpis").innerHTML=[["Total Agenda Received",data.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (>30 days since received)",c(r=>al(r)==AL.od),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
+const od=s=>c(r=>r.status==s&&al(r)==AL.od);
 $("cs").innerHTML=ST.map(s=>{const n=c(r=>r.status==s),o=od(s);return `<div class="pl ${F.st==s?"on":""}" onclick='setF("st",${jq(s)})'><span>${esc(s)}</span><b>${n}</b>${o?`<em>${o} overdue</em>`:"<span></span>"}</div>`}).join("");
 const CS=["Received","1st Reading (Session)","2nd Reading / Deliberated","Pending","Approved"];
 const CMS=[...CM,...[...new Set(data.flatMap(r=>cms(r)))].filter(m=>!CM.includes(m))];
@@ -182,11 +189,11 @@ curRows=rows;for(const id of [...sel])if(!data.some(d=>d.id==id))sel.delete(id);
 $("bd").hidden=!sel.size;$("bd").textContent="Delete selected ("+sel.size+")";$("sa").checked=!!rows.length&&rows.every(r=>sel.has(r.id));
 $("chips").innerHTML=F.st?`<span class="chip" onclick="setF('st','')">${esc(F.st)} ✕</span>`:"";
 $("cnt").textContent=rows.length+" of "+data.length+" shown";
-$("tb").innerHTML=rows.length?rows.map(r=>{const a=al(r),cl=a=="OVERDUE"?"o":a=="Completed"?"":"t";
+$("tb").innerHTML=rows.length?rows.map(r=>{const a=al(r),cl=alCls(a);
 return `<tr><td><input type="checkbox" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"></td><td class="t">${r.no?`<b>${esc(r.no)}</b> · `:""}${esc(r.title)}${r.remarks?`<br><small>${esc(r.remarks)}</small>`:""}</td><td>${esc(r.type)}</td><td>${esc(r.author)||"–"}</td><td>${cms(r).map(m=>`<div>${esc(m)}</div>`).join("")||"–"}</td>
 <td><select onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(s=>`<option ${s==r.status?"selected":""}>${esc(s)}</option>`).join("")}</select></td>
-<td>${r.filed||"–"}</td><td>${(r.sessions||[]).map(d=>`<div>${esc(d)}</div>`).join("")||"–"}</td><td>${esc(r.mayor)||"–"}</td><td>${rep(r)}</td><td>${dp(r)}</td><td><span class="pill ${cl}">${a}</span></td>
-<td style="white-space:nowrap"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></td></tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`}
+<td>${r.filed||"–"}</td><td>${(r.sessions||[]).map(d=>`<div>${esc(d)}</div>`).join("")||"–"}</td><td>${esc(r.mayor)||"–"}</td><td>${rep(r)}</td><td>${dp(r)??"–"}</td><td>${ds(r)??"–"}</td><td><span class="pill ${cl}">${a}</span></td>
+<td style="white-space:nowrap"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></td></tr>`}).join(""):`<tr><td colspan="14" class="empty">No measures found.</td></tr>`}
 function setStatus(id,s){const r=data.find(x=>x.id==id);if(!r)return;const was=r.status;r.status=s;r.stageDate=today();
 if(APPR.includes(s)){if(!r.mayor)r.mayor=today()}else if(APPR.includes(was))r.mayor="";
 render();sync(r).then(ok=>{if(!ok)load()})}
@@ -251,6 +258,9 @@ function go(n){location.hash=n==2?"register":"home";showPg()}
 addEventListener("hashchange",showPg);
 if(SB)document.body.classList.add("lock");
 showPg();render();
+// Re-evaluate Days in Pipeline and alerts when the calendar day rolls over (midnight, or tab wakes up on a new day).
+let lastDay=today();const dayCheck=()=>{if(today()!==lastDay){lastDay=today();render()}};
+setInterval(dayCheck,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)dayCheck()});addEventListener("focus",dayCheck);
 if(!SB)alert("Cloud sync is not set up, so this runs in local-only mode. Edit config.js and add your Supabase project URL and anon key.");
 else{SB.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&col)location.reload()});
 SB.auth.getSession().then(({data:{session}})=>session?boot():showLogin()).catch(showLogin)}
