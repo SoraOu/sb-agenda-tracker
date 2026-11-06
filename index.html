@@ -48,6 +48,9 @@ td select{padding:5px;font-size:13px;width:210px}
 td button{background:none;border:0;color:var(--lnk);padding:2px 6px}td button.d{color:var(--warn)}td a{color:var(--lnk)}
 .chip{display:inline-block;background:var(--pri2);color:var(--lnk);border-radius:99px;padding:2px 10px;font-size:12px;margin-left:6px;cursor:pointer}
 .dr{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--bg);border-left:1px solid var(--bd);transform:translateX(100%);transition:transform .2s;z-index:20;padding:20px;overflow:auto;display:grid;gap:10px;align-content:start;box-shadow:-6px 0 20px #0003}
+.dh{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-20px;margin:-20px -20px 0;padding:14px 20px;background:var(--bg);border-bottom:1px solid var(--bd);z-index:2}
+.xb{background:none;border:0;font-size:20px;line-height:1;color:var(--mut);padding:4px 8px;border-radius:6px}.xb:hover{background:var(--pri2);color:var(--tx)}
+.gh td{background:var(--sec)!important;font-weight:600;text-align:left!important;font-size:13px;color:var(--lnk)}
 .dr.on{transform:none}.dr label{font-size:13px;font-weight:600;color:var(--mut);display:block;margin-bottom:3px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .empty{text-align:center;color:var(--mut);padding:30px}
@@ -104,6 +107,7 @@ applyTheme();
 <div class="kpis" id="kpis"></div>
 <div class="pg on" id="p1">
 <div class="card"><h2>Committee Workload</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Committee</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="cc"></tbody></table></div></div>
+<div class="card"><h2>Types of Documents</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Type of Document</th><th>Total</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="tyb"></tbody></table></div></div>
 </div>
 <div class="pg" id="p2">
 <div class="card"><h2>Pipeline by Stage <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div><div class="leg"><span>Red tag = overdue (more than 30 days in pipeline OR since the last meeting). Hover or click an alert for the reason.</span></div></div>
@@ -112,7 +116,7 @@ applyTheme();
 </div>
 </main>
 <div class="dr" id="dr">
-<b id="mt" style="font-size:17px;font-weight:600">Add agenda</b>
+<div class="dh"><b id="mt" style="font-size:17px;font-weight:600">Add agenda</b><button type="button" class="xb" onclick="closeForm()" aria-label="Close">&#10005;</button></div>
 <div><label>Title / subject</label><textarea id="ft" rows="2"></textarea></div>
 <div><label>Type of document</label><select id="fy"></select></div>
 <div><label>From</label><input id="fa"></div>
@@ -125,7 +129,7 @@ applyTheme();
 <div><label>Remarks / next steps</label><textarea id="fk" rows="3"></textarea></div>
 <button class="pri" onclick="save()">Save</button><button class="ghost" onclick="closeForm()">Cancel</button>
 </div>
-<div class="dr" id="tp"><b style="font-size:17px;font-weight:600">Customize appearance</b>
+<div class="dr" id="tp"><div class="dh"><b style="font-size:17px;font-weight:600">Customize appearance</b><button type="button" class="xb" onclick="closeTP()" aria-label="Close">&#10005;</button></div>
 <div id="tpb" style="display:grid;gap:12px"></div><button class="ghost" onclick="closeTP()">Close</button></div>
 <div class="dr" id="lg"><b style="font-size:17px;font-weight:600">Staff sign in</b>
 <div><label>Email</label><input id="le" type="email" autocomplete="username"></div>
@@ -137,7 +141,7 @@ document.getElementById("tpb").innerHTML=`<div><label>Appearance</label><div cla
 <div><label>Color theme</label><div class="tg">${TH.map((t,i)=>{const v=t[ix].split(" "),on=S.t==i;return `<button class="tc ${on?"on":""}" onclick="setTheme(${i})" aria-pressed="${on}"><span class="pv" style="background:#${v[4]};border-color:#${v[8]}"><span class="pb" style="background:#${v[0]}"><i style="background:#${v[9]}"></i></span><span class="pc" style="background:#${v[5]};border-color:#${v[8]};border-left-color:#${v[3]}"></span></span><span class="sw">${t.sw.map(h=>`<i style="background:#${h}"></i>`).join("")}</span><b>${i?i+". ":""}${esc(t.n)}</b><small>${esc(t.d)}</small>${on?'<em class="ck">&#10003; Selected</em>':""}</button>`}).join("")}</div></div>`}
 function setMode(m){S.m=m;saveTheme();applyTheme()}
 function setTheme(i){S.t=i;saveTheme();applyTheme()}
-function openTP(){buildTP();document.getElementById("tp").classList.add("on")}
+function openTP(){buildTP();const t=document.getElementById("tp");t.classList.add("on");t.scrollTop=0}
 function closeTP(){document.getElementById("tp").classList.remove("on")}
 const ST=["Received","For Follow-Up","1st Reading (Session)","2nd Reading / Deliberated","Pending","For Revision","For Approval","Approved","Deferred","Tabled","Suspended","Disapproved","Implemented / Released","Repealed","Completed / Filed"];
 const CM=["En Banc","Finance, Budget and Appropriations","Housing and Land Use","Barangay Affairs & Boundary Disputes","Good Government, Public Ethics and Accountability","Rules, Resolutions and Ordinances","Health, Sanitation and Nutrition","Transportation","Infrastructure and Public Works","Peace and Order, Security and Human Rights","Education, Culture and Arts","Agriculture, Trade and Industry","Cooperatives","Ways and Means","Women, Family and Social Services","Youth and Sports Development","Environmental Protection and Natural Resources","Tourism","Local Economic Enterprises (Waterworks, Market, Slaughterhouse & Cemetery)","Project Monitoring & Oversight","Games and Amusement","Communication and Information Technology","Disaster Preparedness and Resiliency","MTFRB"];
@@ -205,6 +209,9 @@ $("cs").innerHTML=ST.map(s=>{const n=c(r=>r.status==s),o=od(s);return `<div clas
 const CS=["Received","1st Reading (Session)","2nd Reading / Deliberated","Pending","Approved"];
 const CMS=[...CM,...[...new Set(data.flatMap(r=>cms(r)))].filter(m=>!CM.includes(m))];
 $("cc").innerHTML=CMS.map(m=>{const l=data.filter(r=>cms(r).includes(m));return `<tr><td>${esc(m)}</td>${CS.map(s=>{const n=l.filter(r=>r.status==s).length;return `<td class="${n?"":"z"}">${n}</td>`}).join("")}</tr>`}).join("");
+const TYX=[...new Set(data.map(r=>r.type).filter(t=>t&&!TY.includes(t)))];
+const tyRow=t=>{const l=data.filter(r=>r.type==t);return `<tr><td>${esc(t)}</td><td><b>${l.length}</b></td>${CS.map(s=>{const n=l.filter(r=>r.status==s).length;return `<td class="${n?"":"z"}">${n}</td>`}).join("")}</tr>`};
+$("tyb").innerHTML=TYG.map(g=>`<tr class="gh"><td colspan="7">${esc(g[0])}</td></tr>`+g[1].map(tyRow).join("")).join("")+(TYX.length?`<tr class="gh"><td colspan="7">Other / previous types</td></tr>`+TYX.map(tyRow).join(""):"");
 const q=$("q").value.toLowerCase();
 const rows=data.filter(r=>(!F.st||r.status==F.st)&&(!q||((r.no||"")+" "+(r.title||"")+" "+(r.author||"")).toLowerCase().includes(q)))
 .sort((x,y)=>{const a=val(x,sort.k),b=val(y,sort.k);return (a>b?1:a<b?-1:0)*sort.d});
@@ -237,7 +244,7 @@ if(r.reportFile)await SB.storage.from("reports").remove([r.reportFile.id]);
 await wipeFiles(id)})}
 const M={ft:"title",fy:"type",fa:"author",fst:"status",fd:"filed",fr:"report",fl:"reportLink",fm:"mayor",fk:"remarks"};
 function openForm(id){editId=id||null;const r=id?data.find(x=>x.id==id):{filed:today(),type:TY[0],status:ST[0],committee:CM[0]};if(id&&!r)return;
-$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on")}
+$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on");$("dr").scrollTop=0}
 function closeForm(){$("dr").classList.remove("on")}
 let saving=false;
 async function save(){if(saving)return;if(!$("ft").value.trim()){alert("Title is required.");return}
@@ -279,6 +286,7 @@ if(!boot.sub){boot.sub=1;SB.channel("measures-live").on("postgres_changes",{even
 function showPg(){const b=location.hash=="#register";$("p1").classList.toggle("on",!b);$("p2").classList.toggle("on",b);$("n1").classList.toggle("on",!b);$("n2").classList.toggle("on",b);$("q").style.display=b?"":"none"}
 function go(n){location.hash=n==2?"register":"home";showPg()}
 addEventListener("hashchange",showPg);
+addEventListener("keydown",e=>{if(e.key==="Escape"){closeForm();closeTP()}});
 if(SB)document.body.classList.add("lock");
 showPg();render();
 // Re-evaluate Days in Pipeline and alerts when the calendar day rolls over (midnight, or tab wakes up on a new day).
