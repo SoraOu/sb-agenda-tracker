@@ -94,3 +94,7 @@ th{font-size:12px;letter-spacing:.03em}td{font-size:14px}
 body.lock main,body.lock #q,body.lock .top .pri,body.lock .side{display:none}body.lock{padding-left:0}
 @media(max-width:900px){body,body.sbc{padding-left:0}.side{transform:translateX(-100%);width:250px}body.sbo .side{transform:none}body.sbc .side .tx{display:initial}.side .sc{display:none}.hb{display:inline-block}.top{padding:10px 14px}.dt{display:none}main{padding:16px 14px}.top h1{font-size:18px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+/* Dense dashboard spacing (ui-ux-pro-max: density 8, 8-32px scale) */
+main{padding:20px 24px;gap:16px}.card{padding:16px}.kpi{padding:12px 14px}.kpis{gap:10px}
+td{padding:7px 8px}th{padding:8px}.side nav a{padding:9px 12px}
+button,.side nav a{cursor:pointer}button:hover,.side nav a{transition:background-color .2s,color .2s}
