@@ -2,24 +2,27 @@
 // Add/Edit, Customize and Sign-in drawers are shared by every page.
 document.body.insertAdjacentHTML("beforeend",`<div class="dr" id="dr">
 <div class="dh"><b id="mt" style="font-size:17px;font-weight:600">Add agenda</b><button type="button" class="xb" onclick="closeForm()" aria-label="Close">&#10005;</button></div>
-<div><label>Title / subject</label><textarea id="ft" rows="2"></textarea></div>
+<h3 class="fs">Document</h3><div><label for="ft">Title / subject</label><textarea id="ft" rows="2"></textarea><small class="er" id="fte" hidden>Enter a title before saving.</small></div>
 <div><label>Type of document</label><select id="fy"></select></div>
 <div><label id="lfa">From</label><input id="fa"></div>
 <div><label>Status</label><select id="fst"></select></div>
-<div><label>Committee(s)</label><div id="cl" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addCom()" style="margin-top:6px">+ Add committee</button></div>
-<div class="g2"><div><label>Date received</label><input type="date" id="fd"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
+<h3 class="fs">Routing</h3><div><label>Committee(s)</label><div id="cl" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addCom()" style="margin-top:6px">+ Add committee</button></div>
+<h3 class="fs">Dates</h3><div class="g2"><div><label>Date received</label><input type="date" id="fd"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
 <div><label>Meeting Dates</label><div id="ss" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addSess()" style="margin-top:6px">+ Add meeting date</button></div>
-<div class="g2"><div><label>Committee report no.</label><input id="fr" placeholder="CR-2026-04"></div><div><label>Committee report link</label><input id="fl" type="url" placeholder="https://… (Drive, OneDrive, etc.)"></div></div>
+<h3 class="fs">Committee report</h3><div class="g2"><div><label>Committee report no.</label><input id="fr" placeholder="CR-2026-04"></div><div><label>Committee report link</label><input id="fl" type="url" placeholder="https://… (Drive, OneDrive, etc.)"></div></div>
 <div id="fup"><label>Committee report file</label><input type="file" id="ff" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"><div id="fcur" style="font-size:12px;color:var(--mut);margin-top:4px"></div></div>
-<div><label>Remarks / next steps</label><textarea id="fk" rows="3"></textarea></div>
-<button class="pri" onclick="save()">Save</button><button class="ghost" onclick="closeForm()">Cancel</button>
+<h3 class="fs">Notes</h3><div><label>Remarks / next steps</label><textarea id="fk" rows="3"></textarea></div>
+<div class="sb"><button class="pri" onclick="save()">Save</button><button class="ghost" onclick="closeForm()">Cancel</button></div>
 </div>
 <div class="dr" id="tp"><div class="dh"><b style="font-size:17px;font-weight:600">Customize appearance</b><button type="button" class="xb" onclick="closeTP()" aria-label="Close">&#10005;</button></div>
 <div id="tpb" style="display:grid;gap:12px"></div><button class="ghost" onclick="closeTP()">Close</button></div>
 <div class="dr" id="lg"><b style="font-size:17px;font-weight:600">Staff sign in</b>
 <div><label>Email</label><input id="le" type="email" autocomplete="username"></div>
 <div><label>Password</label><input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key=='Enter')login()"></div>
-<button class="pri" onclick="login()">Sign in</button></div>`);
+<button class="pri" onclick="login()">Sign in</button></div>
+<div id="ts" class="ts" role="status" aria-live="polite"></div><dialog id="cf"><p id="cfm"></p><div class="cfb"><button class="ghost" id="cfn">Cancel</button><button class="pri dg" id="cfy">Delete</button></div></dialog>`);
+let tt;function toast(m,bad){const t=$("ts");t.textContent=m;t.className="ts on"+(bad?" bad":"");clearTimeout(tt);tt=setTimeout(()=>t.className="ts",3500)}
+function ask(m,ok){return new Promise(res=>{const d=$("cf");$("cfm").textContent=m;$("cfy").textContent=ok||"Delete";const f=v=>{d.close();res(v)};$("cfy").onclick=()=>f(true);$("cfn").onclick=()=>f(false);d.oncancel=e=>{e.preventDefault();f(false)};d.showModal()})}
 const ST=["Received","Received. No Follow-Up Needed","For Follow-Up","1st Reading (Session)","2nd Reading / Deliberated","Pending","For Revision","For Approval","Approved","Deferred","Tabled","Suspended","Disapproved","Implemented / Released","Repealed","Completed / Filed"];
 const CM=["En Banc","Finance, Budget and Appropriations","Housing and Land Use","Barangay Affairs & Boundary Disputes","Good Government, Public Ethics and Accountability","Rules, Resolutions and Ordinances","Health, Sanitation and Nutrition","Transportation","Infrastructure and Public Works","Peace and Order, Security and Human Rights","Education, Culture and Arts","Agriculture, Trade and Industry","Cooperatives","Ways and Means","Women, Family and Social Services","Youth and Sports Development","Environmental Protection and Natural Resources","Tourism","Local Economic Enterprises (Waterworks, Market, Slaughterhouse & Cemetery)","Project Monitoring & Oversight","Games and Amusement","Communication and Information Technology","Disaster Preparedness and Resiliency","MTFRB"];
 const TYG=[["1. Legislative Documents",["Proposed Ordinance","Proposed Resolution","Appropriation Ordinance","Supplemental Appropriation Ordinance","Committee Report","Legislative Proposal"]],
@@ -44,7 +47,7 @@ const today=()=>iso(new Date());
 const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const fmtDate=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||"");return m?MO[+m[2]-1]+"-"+(+m[3])+"-"+m[1]:(v||"")};
 const diff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
-let sel=new Set(),curRows=[],AS=null,sess=[],coms=[],col=null,local=true,data=[],editId=null,F={st:"",cm:""},sort={k:"filed",d:-1};
+let sel=new Set(),curRows=[],AS=null,sess=[],coms=[],col=null,local=true,data=[],editId=null,F={st:"",cm:"",od:new URLSearchParams(location.search).get("od")=="1"},sort={k:"filed",d:-1};
 if(!HOME){const c0=new URLSearchParams(location.search).get("cm");if(c0)F.cm=c0}
 try{data=JSON.parse(localStorage.getItem("sbtracker")||"[]");data.forEach(norm)}catch(e){}
 const persist=()=>{if(local)try{localStorage.setItem("sbtracker",JSON.stringify(data))}catch(e){}};
@@ -79,10 +82,15 @@ const alCls=a=>a==AL.od?"o":a==AL.warn?"t":a==AL.ok?"":"n";
 const cols=[["title","Title"],["type","Type"],["author","From"],["committee","Committee"],["status","Status"],["filed","Received"],["","Meeting Dates"],["mayor","Approved"],["","Committee report"],["dp","Days in pipeline"],["ls","Days since last meeting"],["al","Alert"]];
 if($("th"))$("th").innerHTML='<th><input type="checkbox" id="sa" onchange="selAll(this.checked)"></th>'+cols.map(c=>`<th onclick="${c[0]?`srt('${c[0]}')`:""}">${c[1]}</th>`).join("");
 const val=(r,k)=>k=="dp"?(dp(r)??-1):k=="ls"?(dls(r)??-1):k=="ds"?(ds(r)??-1):k=="al"?al(r):(r[k]||"");
+let VW="docket";try{VW=localStorage.getItem("sbview")||"docket"}catch(e){}
+function setV(v){VW=v;try{localStorage.setItem("sbview",v)}catch(e){}render()}
+function srtSel(v){const[k,d]=v.split(":");sort={k,d:+d};render()}
 function srt(k){sort=sort.k==k?{k,d:-sort.d}:{k,d:1};render()}
 function setF(t,v){F[t]=F[t]==v?"":v;render()}
 function setCm(v){F.cm=v;render()}
 function openCm(m){location.href="legislative.html?cm="+encodeURIComponent(m)}
+const alH=(X,a,cl,tip)=>`<span class="al" tabindex="0" role="button" aria-label="${esc(a+". "+tip)}" onclick="this.classList.toggle('open')" onkeydown="if(event.key=='Enter'||event.key==' '){event.preventDefault();this.classList.toggle('open')}" onblur="this.classList.remove('open')"><span class="pill ${cl}">${a}</span>${X.tags.length?`<small class="at">${X.tags.join(" + ")}</small>`:""}<span class="tip" role="tooltip">${X.why.length?X.why.map(w=>`<div>${esc(w)}</div>`).join(""):esc(a)}</span></span>`;
+const brh=(l,d)=>d===null?"":`<div class="br l${lvl(d)}" title="${l}: ${d} days"><span>${l}</span><i style="--w:${Math.min(100,Math.round(d/45*100))}%"></i><b>${d}d</b></div>`;
 function render(){persist();const base=HOME?data:data.filter(r=>sc()?isB(r):!isB(r)),c=f=>base.filter(f).length;
 $("kpis").innerHTML=[["Total Agenda Received",base.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (pipeline or meeting >30 days)",c(r=>al(r)==AL.od),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
 const CS=["Received","1st Reading (Session)","2nd Reading / Deliberated","Pending","Approved"];
@@ -92,13 +100,19 @@ $("cc").innerHTML=CMS.map(m=>{const l=data.filter(r=>cms(r).includes(m));return 
 const TYX=[...new Set(data.map(r=>r.type).filter(t=>t&&!TY.includes(t)))];
 const tyRow=t=>{const l=data.filter(r=>r.type==t);return `<tr><td>${esc(t)}</td><td><b>${l.length}</b></td>${CS.map(s=>{const n=l.filter(r=>r.status==s).length;return `<td class="${n?"":"z"}">${n}</td>`}).join("")}</tr>`};
 $("tyb").innerHTML=TYG.map(g=>`<tr class="gh"><td colspan="7">${esc(g[0])}</td></tr>`+g[1].map(tyRow).join("")).join("")+(TYX.length?`<tr class="gh"><td colspan="7">Other / previous types</td></tr>`+TYX.map(tyRow).join(""):"");
+const hot=data.map(r=>({r,w:al(r)==AL.od?Math.max(dp(r)??0,dls(r)??0):-1})).filter(o=>o.w>=0).sort((x,y)=>y.w-x.w);
+$("nc").textContent=hot.length+" overdue";
+$("na").innerHTML=hot.length?hot.slice(0,8).map(({r})=>{const w=alx(r).why[0]||"";return `<a class="na" href="${isB(r)?"barangay":"legislative"}.html?od=1"><span class="nt">${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</span><span class="nm">${esc(r.status)}, ${esc(cms(r)[0]||"No committee")}</span><span class="nd">${esc(w.replace(/^Overdue \u2013 /,""))}</span></a>`}).join("")+(hot.length>8?`<p class="mo">${hot.length-8} more overdue. Open a register and use Overdue only.</p>`:""):`<p class="empty">No overdue agenda. Everything is on track or finished.</p>`;
 return}
 const dS=data.filter(r=>sc()?isB(r):!isB(r)),dd=dS.filter(r=>!F.cm||cms(r).includes(F.cm)),cd=f=>dd.filter(f).length;
 const od=s=>cd(r=>r.status==s&&al(r)==AL.od);
-$("cs").innerHTML=ST.map(s=>{const n=cd(r=>r.status==s),o=od(s);return `<div class="pl ${F.st==s?"on":""}" onclick='setF("st",${jq(s)})'><span>${esc(s)}</span><b>${n}</b>${o?`<em>${o} overdue</em>`:"<span></span>"}</div>`}).join("");
+const GR=[["Intake",["Received","For Follow-Up"]],["Session",["1st Reading (Session)","2nd Reading / Deliberated"]],["Committee",["Pending","For Revision","For Approval"]],["On hold",["Deferred","Suspended"]]];GR.push(["Closed",ST.filter(s=>!GR.some(g=>g[1].includes(s)))]);
+const chip=s=>{const n=cd(r=>r.status==s),o=od(s);return `<button type="button" class="pl ${F.st==s?"on":""}" aria-pressed="${F.st==s}" onclick='setF("st",${jq(s)})'><span>${esc(s)}</span><b>${n}</b>${o?`<em title="${o} overdue">\u2691 ${o}</em>`:""}</button>`};
+$("cs").innerHTML=GR.map(g=>`<div class="gr${g[0]=="Closed"?" cl":""}"><h3>${g[0]}</h3><div class="gc">${g[1].map(chip).join("")}</div></div>`).join("");
 $("fcm").innerHTML='<option value="">All committees</option>'+CMS.map(m=>`<option ${m==F.cm?"selected":""}>${esc(m)}</option>`).join("");
+$("fod").checked=F.od;$("tbw").hidden=VW=="docket";$("dk").hidden=VW!="docket";$("vd").classList.toggle("on",VW=="docket");$("vt").classList.toggle("on",VW!="docket");
 const q=$("q").value.toLowerCase();
-const rows=dS.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||cms(r).includes(F.cm))&&(!q||((r.no||"")+" "+(r.title||"")+" "+(r.author||"")).toLowerCase().includes(q)))
+const rows=dS.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||cms(r).includes(F.cm))&&(!F.od||al(r)==AL.od)&&(!q||((r.no||"")+" "+(r.title||"")+" "+(r.author||"")).toLowerCase().includes(q)))
 .sort((x,y)=>{const a=val(x,sort.k),b=val(y,sort.k);return (a>b?1:a<b?-1:0)*sort.d});
 curRows=rows;for(const id of [...sel])if(!data.some(d=>d.id==id))sel.delete(id);
 $("bd").hidden=!sel.size;$("bd").textContent="Delete selected ("+sel.size+")";$("sa").checked=!!rows.length&&rows.every(r=>sel.has(r.id));
@@ -107,22 +121,24 @@ $("cnt").textContent=rows.length+" of "+dS.length+" shown";
 $("tb").innerHTML=rows.length?rows.map(r=>{const X=alx(r),a=X.a,cl=alCls(a),tip=X.why.length?X.why.join(" "):a;
 return `<tr><td style="white-space:nowrap"><div style="display:flex;align-items:center;gap:2px"><input type="checkbox" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></td><td class="t">${r.no?`<b>${esc(r.no)}</b> · `:""}${esc(r.title)}${r.remarks?`<br><small>${esc(r.remarks)}</small>`:""}</td><td>${esc(r.type)}</td><td>${esc(r.author)||"–"}</td><td>${cms(r).map(m=>`<div>${esc(m)}</div>`).join("")||"–"}</td>
 <td><select onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(s=>`<option ${s==r.status?"selected":""}>${esc(s)}</option>`).join("")}</select></td>
-<td style="white-space:nowrap">${fmtDate(r.filed)||"–"}</td><td>${(r.sessions||[]).map(d=>`<div style="white-space:nowrap">${esc(fmtDate(d))}</div>`).join("")||"–"}</td><td style="white-space:nowrap">${esc(fmtDate(r.mayor))||"–"}</td><td>${rep(r)}</td><td>${dp(r)??"–"}</td><td>${dls(r)??"–"}</td><td><span class="al" tabindex="0" role="button" aria-label="${esc(a+". "+tip)}" onclick="this.classList.toggle('open')" onkeydown="if(event.key=='Enter'||event.key==' '){event.preventDefault();this.classList.toggle('open')}" onblur="this.classList.remove('open')"><span class="pill ${cl}">${a}</span>${X.tags.length?`<small class="at">${X.tags.join(" + ")}</small>`:""}<span class="tip" role="tooltip">${X.why.length?X.why.map(w=>`<div>${esc(w)}</div>`).join(""):esc(a)}</span></span></td>
-</tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`}
+<td style="white-space:nowrap">${fmtDate(r.filed)||"–"}</td><td>${(r.sessions||[]).map(d=>`<div style="white-space:nowrap">${esc(fmtDate(d))}</div>`).join("")||"–"}</td><td style="white-space:nowrap">${esc(fmtDate(r.mayor))||"–"}</td><td>${rep(r)}</td><td>${dp(r)??"–"}</td><td>${dls(r)??"–"}</td><td>${alH(X,a,cl,tip)}</td>
+</tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`;
+$("dk").innerHTML=rows.length?rows.map(r=>{const X=alx(r),a=X.a,cl=alCls(a),tip=X.why.length?X.why.join(" "):a,ss=(r.sessions||[]).map(fmtDate).join(", ");
+return `<article class="dk ${cl?"k"+cl:""}"><input type="checkbox" aria-label="Select" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><div class="dm"><h3>${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</h3><p>${[r.type,r.author].filter(Boolean).map(x=>esc(x)).join(", ")}${cms(r).length?`<br>${cms(r).map(x=>esc(x)).join("; ")}`:""}</p><p>Received ${esc(fmtDate(r.filed))||"–"}${r.mayor?`. Approved ${esc(fmtDate(r.mayor))}`:""}${ss?`. Meetings ${esc(ss)}`:""}</p>${rep(r)!="–"?`<p>Report: ${rep(r)}</p>`:""}${r.remarks?`<p class="rk">${esc(r.remarks)}</p>`:""}</div><div class="ds"><select aria-label="Status" onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(x=>`<option ${x==r.status?"selected":""}>${esc(x)}</option>`).join("")}</select>${brh("In pipeline",dp(r))}${brh("Since meeting",dls(r))}${alH(X,a,cl,tip)}<div class="ac"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></div></article>`}).join(""):`<p class="empty">No agenda items match these filters.</p>`}
 function setStatus(id,s){const r=data.find(x=>x.id==id);if(!r)return;const was=r.status;r.status=s;r.stageDate=today();
 if(APPR.includes(s)){if(!r.mayor)r.mayor=today()}else if(APPR.includes(was))r.mayor="";
 render();sync(r).then(ok=>{if(!ok)load()})}
 function selOne(id,on){on?sel.add(id):sel.delete(id);render()}
 function selAll(on){curRows.forEach(r=>on?sel.add(r.id):sel.delete(r.id));render()}
-function delSel(){const n=sel.size;if(!n||!confirm("Delete "+n+" selected agenda item"+(n>1?"s":"")+"? This cannot be undone."))return;
-const ids=[...sel],rs=data.filter(x=>sel.has(x.id));data=data.filter(x=>!sel.has(x.id));sel.clear();render();if(!col)return;
+async function delSel(){const n=sel.size;if(!n||!await ask("Delete "+n+" selected agenda item"+(n>1?"s":"")+"? This cannot be undone."))return;
+const ids=[...sel],rs=data.filter(x=>sel.has(x.id));data=data.filter(x=>!sel.has(x.id));sel.clear();render();toast("Deleted");if(!col)return;
 SB.from("measures").delete().in("id",ids).select().then(async({data:d,error})=>{
 if(error||!d||!d.length){werr(error||{message:"Delete was not permitted."});load();return}
 if(d.length<ids.length)load();
 const gone=new Set(d.map(x=>x.id));
 for(const r of rs)if(gone.has(r.id)){if(r.reportFile)await SB.storage.from("reports").remove([r.reportFile.id]);await wipeFiles(r.id)}})}
-function del(id){if(!confirm("Delete this agenda item?"))return;const r=data.find(x=>x.id==id);if(!r)return;
-data=data.filter(x=>x.id!=id);render();if(!col)return;
+async function del(id){if(!await ask("Delete this agenda item? This cannot be undone."))return;const r=data.find(x=>x.id==id);if(!r)return;
+data=data.filter(x=>x.id!=id);render();toast("Deleted");if(!col)return;
 SB.from("measures").delete().eq("id",id).select().then(async({data:d,error})=>{
 if(error||!d||!d.length){werr(error||{message:"Delete was not permitted."});load();return}
 if(r.reportFile)await SB.storage.from("reports").remove([r.reportFile.id]);
@@ -130,10 +146,10 @@ await wipeFiles(id)})}
 const M={ft:"title",fy:"type",fa:"author",fst:"status",fd:"filed",fr:"report",fl:"reportLink",fm:"mayor",fk:"remarks"};
 function fillTypes(bg){$("fy").innerHTML=TYG.map(g=>`<optgroup label="${esc(g[0])}">${g[1].map(x=>`<option>${esc(x)}</option>`).join("")}</optgroup>`).join("")}
 function openForm(id){editId=id||null;const r=id?data.find(x=>x.id==id):{filed:today(),type:sc()?BT[0]:TY[0],status:ST[0],committee:CM[0]};if(id&&!r)return;
-fillTypes();$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on");$("dr").scrollTop=0}
+fillTypes();$("fte").hidden=true;$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on");$("dr").scrollTop=0}
 function closeForm(){$("dr").classList.remove("on")}
 let saving=false;
-async function save(){if(saving)return;if(!$("ft").value.trim()){alert("Title is required.");return}
+async function save(){if(saving)return;if(!$("ft").value.trim()){$("fte").hidden=false;$("ft").focus();return}
 saving=true;try{
 const isNew=!editId,r=isNew?{id:Date.now(),stageDate:today()}:data.find(x=>x.id==editId);
 if(!r){alert("This item no longer exists.");closeForm();return}
@@ -144,7 +160,7 @@ const fl=$("ff").files[0];
 if(fl&&AS){try{const u=await AS.upload(fl,r.id);up={id:u.id,name:fl.name};r.reportFile=up}catch(e){alert("File upload failed: "+((e&&e.message)||"not permitted"))}}
 if(old!==r.status)r.stageDate=today();
 if(isNew)data.unshift(r);
-const ok=await sync(r);closeForm();render();
+const ok=await sync(r);closeForm();render();if(ok)toast("Saved");
 if(ok){if(up&&prev&&prev.id!==up.id&&SB)SB.storage.from("reports").remove([prev.id])}
 else{if(up&&SB)SB.storage.from("reports").remove([up.id]);load()}
 }finally{saving=false}}
@@ -153,7 +169,7 @@ function addCom(){const n=CM.find(m=>!coms.includes(m));if(n){coms.push(n);drawC
 function rep(r){const a=[];if(r.report)a.push(esc(r.report));if(r.reportLink&&/^https?:\/\//i.test(r.reportLink))a.push(`<a href="${esc(r.reportLink)}" target="_blank" rel="noopener">Link</a>`);if(r.reportFile)a.push(`<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>`);return a.join("<br>")||"–"}
 function drawSess(){$("ss").innerHTML=sess.map((d,i)=>`<div style="display:flex;gap:6px"><input type="date" value="${esc(d)}" onchange="sess[${i}]=this.value"><button type="button" class="ghost" onclick="sess.splice(${i},1);drawSess()">✕</button></div>`).join("")||'<small style="color:var(--mut)">No meeting dates yet</small>'}
 function addSess(){sess.push(today());drawSess()}
-function werr(e){alert("Could not save: "+((e&&e.message)||"you do not have permission to edit."))}
+function werr(e){toast("Could not save: "+((e&&e.message)||"you do not have permission to edit."),1)}
 const CFG=typeof SB_CONFIG!=="undefined"?SB_CONFIG:null;
 const SB=CFG&&CFG.url&&CFG.key&&!/YOUR-/.test(CFG.url+CFG.key)&&typeof supabase!=="undefined"?supabase.createClient(CFG.url,CFG.key):null;
 const toRow=r=>({id:r.id,no:r.no||"",title:r.title,type:r.type||"",author:r.author||"",status:r.status,committee:r.committee||"",filed:r.filed||null,stage_date:r.stageDate||null,mayor:r.mayor||null,report:r.report||null,report_link:r.reportLink||null,report_file:r.reportFile||null,remarks:r.remarks||null,sessions:r.sessions||[],updated_at:new Date().toISOString()});
