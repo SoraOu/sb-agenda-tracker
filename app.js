@@ -83,8 +83,8 @@ function srt(k){sort=sort.k==k?{k,d:-sort.d}:{k,d:1};render()}
 function setF(t,v){F[t]=F[t]==v?"":v;render()}
 function setCm(v){F.cm=v;render()}
 function openCm(m){location.href="legislative.html?cm="+encodeURIComponent(m)}
-function render(){persist();const c=f=>data.filter(f).length;
-$("kpis").innerHTML=[["Total Agenda Received",data.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (pipeline or meeting >30 days)",c(r=>al(r)==AL.od),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
+function render(){persist();const base=HOME?data:data.filter(r=>sc()?isB(r):!isB(r)),c=f=>base.filter(f).length;
+$("kpis").innerHTML=[["Total Agenda Received",base.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (pipeline or meeting >30 days)",c(r=>al(r)==AL.od),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
 const CS=["Received","1st Reading (Session)","2nd Reading / Deliberated","Pending","Approved"];
 const CMS=[...CM,...[...new Set(data.flatMap(r=>cms(r)))].filter(m=>!CM.includes(m))];
 if(HOME){
