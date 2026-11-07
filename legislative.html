@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Legislative Documents – Sangguniang Bayan Agenda Tracker</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script><script src="config.js"></script><script src="theme.js"></script></head>
+<body data-page="legislative">
+<script src="shell.js"></script>
+<main>
+<div class="kpis" id="kpis"></div>
+<div class="pg on">
+<div class="card"><h2><span id="pt">Pipeline by Stage</span> <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div><div class="leg"><span>Red tag = overdue (more than 30 days in pipeline OR since the last meeting). Hover or click an alert for the reason.</span></div></div>
+<div class="fbar"><label for="fcm">Filter by committee</label><select id="fcm" onchange="setCm(this.value)"></select></div>
+<div class="card"><h2><span><span id="rt">Legislative Register</span> <span id="chips"></span></span><span style="display:flex;gap:12px;align-items:center"><button class="ghost" id="bd" hidden onclick="delSel()" style="padding:6px 12px;color:var(--warn);border-color:var(--warn)">Delete selected</button><span style="font-weight:400;font-size:13px;color:var(--mut)" id="cnt"></span></span></h2>
+<div class="tw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div></div>
+</div>
+</main>
+<script src="app.js"></script>
+</body></html>
