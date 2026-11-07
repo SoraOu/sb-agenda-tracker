@@ -17,8 +17,9 @@ mk("Chili Spice","Bold red, distinctive","F4E6E6","B94B4B","782C32","F8F5F5","FF
 mk("Calm Blue","Soft blue, friendly and professional","E6F0F5","6F9DB8","3F6D89","F3F7F9","FFFFFF"),
 mk("Harbor Haze","Muted teal, modern and fresh","E8EFF0","718E91","435F63","F4F7F7","FFFFFF"),
 mk("Eucalyptus Grove","Soft green, serene and balanced","E6F0EB","6F9885","426D59","F3F7F4","FFFFFF")];
+TH.push({n:"SB Mogpog",d:"Official maroon and gold",sw:["EFEAE5","D4A017","7A1414","F6F5F2","FFFFFF"],L:"EFEAE5 F1E9E7 F3EEEA D4A017 F6F5F2 FFFFFF 252525 747474 E8E4DF 7A1414 FFFFFF 521010 7A1414 7A1414",D:"2A1717 3A2222 321C1C D4A017 1A1010 241616 F2ECEA B9A9A6 3D2A2A A33A3A FFFFFF B84A4A E8A0A0 D4A017"});
 const SEM={light:{ok:"#1a7f4b",okbg:"#e3f5ec",warn:"#b42318",warnbg:"#fde8e6",amb:"#8a5a00",ambbg:"#fff3d6",c2:"#e0a100",c3:"#1a7f4b"},dark:{ok:"#5cd18f",okbg:"#17382a",warn:"#ff8a80",warnbg:"#4a201d",amb:"#f0c060",ambbg:"#40330f",c2:"#f0c060",c3:"#5cd18f"}};
-let S={t:0,m:"auto"};try{S=Object.assign(S,JSON.parse(localStorage.getItem("sbtheme")||"{}"))}catch(e){}
+let S={t:TH.length-1,m:"auto"};try{S=Object.assign(S,JSON.parse(localStorage.getItem("sbtheme")||"{}"))}catch(e){}
 S.t=Math.min(Math.max(+S.t||0,0),TH.length-1);
 const mq=matchMedia("(prefers-color-scheme: dark)");
 const eff=()=>S.m=="auto"?(mq.matches?"dark":"light"):S.m;
