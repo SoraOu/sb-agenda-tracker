@@ -67,7 +67,7 @@ body.lock main,body.lock #q,body.lock .top .pri,body.lock .nav{display:none}
 
 /* ===== Redesign layer: institutional shell, type, tables ===== */
 :root{--sbw:250px;--r:8px;--fh:Manrope,Inter,system-ui,sans-serif;--fb:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-body{font-family:var(--fb);padding-left:var(--sbw);transition:padding-left .2s;font-variant-numeric:tabular-nums}
+body{font-family:var(--fb);padding-left:var(--sbw);font-variant-numeric:tabular-nums}
 body.sbc{--sbw:68px}
 h1,h2,.kpi b,.side .brand b{font-family:var(--fh)}
 .side{position:fixed;inset:0 auto 0 0;width:var(--sbw);background:linear-gradient(180deg,#5E1111,#3E0B0B);color:#F3E6E3;display:flex;flex-direction:column;z-index:30;transition:width .2s,transform .2s;border-right:2px solid #D4A017;overflow:hidden}
@@ -97,4 +97,4 @@ body.lock main,body.lock #q,body.lock .top .pri,body.lock .side{display:none}bod
 /* Dense dashboard spacing (ui-ux-pro-max: density 8, 8-32px scale) */
 main{padding:20px 24px;gap:16px}.card{padding:16px}.kpi{padding:12px 14px}.kpis{gap:10px}
 td{padding:7px 8px}th{padding:8px}.side nav a{padding:9px 12px}
-button,.side nav a{cursor:pointer}button:hover,.side nav a{transition:background-color .2s,color .2s}
+button,.side nav a{cursor:pointer}.side nav a{transition:background-color .2s,color .2s}
