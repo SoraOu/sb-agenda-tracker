@@ -1,0 +1,108 @@
+From 825f7851fab409e2f7006d085ca3f9f6c2179f2b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 7 Nov 2026 06:07:05 +0000
+Subject: [PATCH] Dashboard order, consistent top-right actions, labelled
+ docket fields
+
+---
+ app.js     |  3 ++-
+ index.html |  2 +-
+ shell.js   |  4 ++--
+ styles.css | 12 ++++++------
+ 4 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/app.js b/app.js
+index 69cdef2..4449932 100644
+--- a/app.js
++++ b/app.js
+@@ -124,7 +124,7 @@ return `<tr><td style="white-space:nowrap"><div style="display:flex;align-items:
+ <td style="white-space:nowrap">${fmtDate(r.filed)||"–"}</td><td>${(r.sessions||[]).map(d=>`<div style="white-space:nowrap">${esc(fmtDate(d))}</div>`).join("")||"–"}</td><td style="white-space:nowrap">${esc(fmtDate(r.mayor))||"–"}</td><td>${rep(r)}</td><td>${dp(r)??"–"}</td><td>${dls(r)??"–"}</td><td>${alH(X,a,cl,tip)}</td>
+ </tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`;
+ $("dk").innerHTML=rows.length?rows.map(r=>{const X=alx(r),a=X.a,cl=alCls(a),tip=X.why.length?X.why.join(" "):a,ss=(r.sessions||[]).map(fmtDate).join(", ");
+-return `<article class="dk ${cl?"k"+cl:""}"><input type="checkbox" aria-label="Select" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><div class="dm"><h3>${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</h3><p>${[r.type,r.author].filter(Boolean).map(x=>esc(x)).join(", ")}${cms(r).length?`<br>${cms(r).map(x=>esc(x)).join("; ")}`:""}</p><p>Received ${esc(fmtDate(r.filed))||"–"}${r.mayor?`. Approved ${esc(fmtDate(r.mayor))}`:""}${ss?`. Meetings ${esc(ss)}`:""}</p>${rep(r)!="–"?`<p>Report: ${rep(r)}</p>`:""}${r.remarks?`<p class="rk">${esc(r.remarks)}</p>`:""}</div><div class="ds"><select aria-label="Status" onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(x=>`<option ${x==r.status?"selected":""}>${esc(x)}</option>`).join("")}</select>${brh("In pipeline",dp(r))}${brh("Since meeting",dls(r))}${alH(X,a,cl,tip)}<div class="ac"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></div></article>`}).join(""):`<p class="empty">No agenda items match these filters.</p>`}
++return `<article class="dk ${cl?"k"+cl:""}"><input type="checkbox" aria-label="Select" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><div class="dm"><h3>${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</h3>${[["Committee",cms(r).map(x=>esc(x)).join("; ")],["From",esc(r.author)],["Type",esc(r.type)]].map(([k,v])=>`<p><span class="lb">${k}:</span> ${v||"–"}</p>`).join("")}<p><span class="lb">Received:</span> ${esc(fmtDate(r.filed))||"–"}${r.mayor?`<span class="gap"></span><span class="lb">Approved:</span> ${esc(fmtDate(r.mayor))}`:""}</p><p><span class="lb">Meetings:</span> ${esc(ss)||"–"}</p><p><span class="lb">Committee Report No.:</span> ${repI(r)||"–"}</p><p><span class="lb">Remarks:</span> <b>${esc(r.remarks)||"–"}</b></p></div><div class="ds"><select aria-label="Status" onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(x=>`<option ${x==r.status?"selected":""}>${esc(x)}</option>`).join("")}</select>${brh("In pipeline",dp(r))}${brh("Since meeting",dls(r))}${alH(X,a,cl,tip)}<div class="ac"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></div></article>`}).join(""):`<p class="empty">No agenda items match these filters.</p>`}
+ function setStatus(id,s){const r=data.find(x=>x.id==id);if(!r)return;const was=r.status;r.status=s;r.stageDate=today();
+ if(APPR.includes(s)){if(!r.mayor)r.mayor=today()}else if(APPR.includes(was))r.mayor="";
+ render();sync(r).then(ok=>{if(!ok)load()})}
+@@ -167,6 +167,7 @@ else{if(up&&SB)SB.storage.from("reports").remove([up.id]);load()}
+ function drawCom(){$("cl").innerHTML=coms.map((c,i)=>`<div style="display:flex;gap:6px"><select onchange="coms[${i}]=this.value">${(CM.includes(c)?CM:[c,...CM]).map(m=>`<option ${m==c?"selected":""}>${esc(m)}</option>`).join("")}</select>${coms.length>1?`<button type="button" class="ghost" onclick="coms.splice(${i},1);drawCom()">✕</button>`:""}</div>`).join("")}
+ function addCom(){const n=CM.find(m=>!coms.includes(m));if(n){coms.push(n);drawCom()}}
+ function rep(r){const a=[];if(r.report)a.push(esc(r.report));if(r.reportLink&&/^https?:\/\//i.test(r.reportLink))a.push(`<a href="${esc(r.reportLink)}" target="_blank" rel="noopener">Link</a>`);if(r.reportFile)a.push(`<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>`);return a.join("<br>")||"–"}
++function repI(r){const a=[];if(r.report)a.push(esc(r.report));if(r.reportLink&&/^https?:\/\//i.test(r.reportLink))a.push(`(<a href="${esc(r.reportLink)}" target="_blank" rel="noopener">link</a>)`);if(r.reportFile)a.push(`(<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>)`);return a.join(" ")}
+ function drawSess(){$("ss").innerHTML=sess.map((d,i)=>`<div style="display:flex;gap:6px"><input type="date" value="${esc(d)}" onchange="sess[${i}]=this.value"><button type="button" class="ghost" onclick="sess.splice(${i},1);drawSess()">✕</button></div>`).join("")||'<small style="color:var(--mut)">No meeting dates yet</small>'}
+ function addSess(){sess.push(today());drawSess()}
+ function werr(e){toast("Could not save: "+((e&&e.message)||"you do not have permission to edit."),1)}
+diff --git a/index.html b/index.html
+index 1584627..4a089cc 100644
+--- a/index.html
++++ b/index.html
+@@ -8,12 +8,12 @@
+ <body data-page="home">
+ <script src="shell.js"></script>
+ <main>
+-<section class="card"><h2>Needs attention <span id="nc"></span></h2><div id="na"></div></section>
+ <div class="kpis" id="kpis"></div>
+ <div class="pg on two">
+ <div class="card"><h2>Committee Workload</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Committee</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="cc"></tbody></table></div></div>
+ <div class="card"><h2>Types of Documents</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Type of Document</th><th>Total</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="tyb"></tbody></table></div></div>
+ </div>
++<section class="card"><h2>Needs attention <span id="nc"></span></h2><div id="na"></div></section>
+ </main>
+ <script src="app.js"></script>
+ </body></html>
+diff --git a/shell.js b/shell.js
+index 38cd43c..f72fa80 100644
+--- a/shell.js
++++ b/shell.js
+@@ -4,5 +4,5 @@ const NAV=[["home","index.html","Dashboard"],["legislative","legislative.html","
+ const TTL=(NAV.find(n=>n[0]===PAGE)||NAV[0])[2];
+ document.body.insertAdjacentHTML("afterbegin",`<header class="top"><a class="brand" href="index.html"><img class="logo" alt="Seal of the Sangguniang Bayan of Mogpog" src="logo.jpg"><span class="bt"><b>Sangguniang Bayan of Mogpog</b><small>Agenda Tracker</small></span></a>
+ <nav aria-label="Main navigation">${NAV.map(n=>`<a href="${n[1]}"${n[0]===PAGE?' class="on" aria-current="page"':""}>${n[2]}</a>`).join("")}</nav>
+-<div class="act">${HOME?"":'<input id="q" type="search" aria-label="Search" placeholder="Search title or from" oninput="render()">'}<button class="ghost" id="so" hidden onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button><button class="ghost" onclick="openTP()">Customize</button><button class="pri" id="ab" onclick="openForm()">Add agenda</button></div></header>
+-<div class="ph"><h1>${TTL}</h1><span class="dt">${new Date().toLocaleDateString("en-PH",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</span></div>`);
++<div class="act"><button class="ghost" id="so" hidden onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button><button class="ghost" onclick="openTP()">Customize</button><button class="pri" id="ab" onclick="openForm()">Add agenda</button></div></header>
++<div class="ph"><h1>${TTL}</h1><span class="dt">${new Date().toLocaleDateString("en-PH",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</span>${HOME?"":'<input id="q" type="search" aria-label="Search" placeholder="Search title or from" oninput="render()">'}</div>`);
+diff --git a/styles.css b/styles.css
+index 74655bb..c25ccf9 100644
+--- a/styles.css
++++ b/styles.css
+@@ -15,15 +15,15 @@ input[type=checkbox]{width:16px;height:16px;padding:0;accent-color:var(--pri)}
+ .brand{display:flex;gap:12px;align-items:center;color:inherit;text-decoration:none}
+ .logo{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--acc)}
+ .bt b{display:block;font:600 18px/1.15 var(--fh)}.bt small{font-size:12px;opacity:.8}
+-.top nav{display:flex;gap:4px;margin-right:auto}
++.top nav{display:flex;gap:4px}
+ .top nav a{padding:10px 14px;color:inherit;text-decoration:none;font-weight:500;font-size:14px;border-radius:var(--r) var(--r) 0 0}
+ .top nav a:hover{background:#ffffff1f}.top nav a.on{font-weight:600;box-shadow:inset 0 -3px var(--acc)}
+-.act{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
++.act{display:flex;gap:8px;align-items:center;margin-left:auto;flex:none}
+ .top input{width:240px;background:#ffffff24;border-color:#ffffff59;color:inherit}.top input::placeholder{color:inherit;opacity:.75}
+ .top .ghost{color:inherit;border-color:color-mix(in srgb,currentColor 45%,transparent)}.top .ghost:hover{background:#ffffff1f}
+ .top .pri{background:var(--btx);color:var(--pri)}.top .pri:hover{background:var(--sub)}
+-.ph{max-width:1500px;margin:0 auto;padding:22px 28px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+-.ph h1{font:600 30px/1.15 var(--fh);margin:0}.dt{font-size:13px;color:var(--mut)}
++.ph{max-width:1500px;margin:0 auto;padding:22px 28px 0;display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px}
++.ph h1{font:600 30px/1.15 var(--fh);margin:0;flex:1 1 auto}.ph input{width:260px;max-width:100%}.dt{font-size:13px;color:var(--mut)}
+ main{max-width:1500px;margin:0 auto;padding:16px 28px 40px;display:grid;gap:18px}
+ body.lock main,body.lock .ph,body.lock .top nav,body.lock .top .act{display:none}
+ .pg{display:none}.pg.on{display:grid;gap:18px}.two{grid-template-columns:1fr}
+@@ -53,7 +53,7 @@ body.lock main,body.lock .ph,body.lock .top nav,body.lock .top .act{display:none
+ /* Docket */
+ .dk{display:grid;grid-template-columns:auto 1fr minmax(240px,300px);gap:14px;padding:14px 4px 14px 12px;border-top:1px solid var(--bd);border-left:3px solid transparent}
+ .dk.ko{border-left-color:var(--warn)}.dk.kt{border-left-color:var(--amb)}
+-.dm h3{font:500 17px/1.35 var(--fh);margin:0 0 4px;max-width:70ch}.dm p{margin:2px 0;font-size:13.5px;color:var(--mut)}.dm .rk{color:var(--tx)}
++.dm h3{font:500 17px/1.35 var(--fh);margin:0 0 8px;max-width:70ch}.dm p{margin:2px 0;font-size:14px}.dm .lb{color:var(--mut)}.dm .gap{display:inline-block;width:2.5em}
+ .ds{display:grid;gap:8px;align-content:start}.ds select{width:100%}
+ .br{display:grid;grid-template-columns:92px 1fr 36px;gap:8px;align-items:center;font-size:12px;color:var(--mut)}.br b{text-align:right;color:var(--tx);font-weight:600}
+ .br i{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,transparent calc(33.3% - 1px),var(--bd) 0 calc(33.3% + 1px),transparent 0 calc(66.6% - 1px),var(--bd) 0 calc(66.6% + 1px),transparent 0),var(--pri2)}
+@@ -93,6 +93,6 @@ dialog{border:1px solid var(--bd);border-radius:10px;padding:20px;background:var
+ .tc b{font-size:14px;font-weight:600}.tc small{font-weight:400;font-size:12px;color:var(--mut)}.ck{font-style:normal;font-size:12px;font-weight:600;color:var(--lnk)}
+ .sw{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--bd)}.sw i{flex:1}
+ .pv{display:grid;gap:4px;padding:6px;border:1px solid;border-radius:6px}.pb{display:flex;justify-content:flex-end;padding:3px 5px;border-radius:4px}.pb i{width:24px;height:8px;border-radius:3px}.pc{height:12px;border:1px solid;border-left-width:3px;border-radius:3px}
+-@media(max-width:800px){.top{padding:10px 14px}.top nav{order:3;width:100%;overflow-x:auto}.top input{width:100%}.ph,main{padding-left:14px;padding-right:14px}.ph h1{font-size:24px}.dt{display:none}.kpi{flex-basis:45%}.dk{grid-template-columns:auto 1fr}.dk .ds{grid-column:1/-1}.vw{margin-left:0}}
++@media(max-width:800px){.top{padding:10px 14px}.top nav{order:3;width:100%;overflow-x:auto}.act{flex-wrap:wrap}.ph input{width:100%}.ph,main{padding-left:14px;padding-right:14px}.ph h1{font-size:24px}.dt{display:none}.kpi{flex-basis:45%}.dk{grid-template-columns:auto 1fr}.dk .ds{grid-column:1/-1}.vw{margin-left:0}}
+ @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+ @media print{@page{size:landscape;margin:12mm}.top,.ph,.kpis,.fbar,#cs,.dr,.ts,.ac,.dk>input,.dk .ds select,.leg{display:none!important}body{background:#fff}.card{border:0;padding:0}.dk{break-inside:avoid;grid-template-columns:1fr 240px}}
+-- 
+2.43.0
+

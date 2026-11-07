@@ -1,0 +1,458 @@
+From 975907a995421b7d012f6c2bc8bf7b54292501c1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 7 Nov 2026 05:11:11 +0000
+Subject: [PATCH] Redesign v3: top bar, needs-attention dashboard, stage rail,
+ docket view, toasts and dialogs
+
+---
+ app.js                |  56 +++++++-----
+ barangay.html         |   4 +-
+ data.filter(f).length |   0
+ index.html            |   4 +-
+ legislative.html      |   4 +-
+ shell.js              |  17 ++--
+ styles.css            | 192 +++++++++++++++++++++---------------------
+ theme.js              |   2 +-
+ 8 files changed, 143 insertions(+), 136 deletions(-)
+ delete mode 100644 data.filter(f).length
+
+diff --git a/app.js b/app.js
+index 0f36bbf..69cdef2 100644
+--- a/app.js
++++ b/app.js
+@@ -2,24 +2,27 @@
+ // Add/Edit, Customize and Sign-in drawers are shared by every page.
+ document.body.insertAdjacentHTML("beforeend",`<div class="dr" id="dr">
+ <div class="dh"><b id="mt" style="font-size:17px;font-weight:600">Add agenda</b><button type="button" class="xb" onclick="closeForm()" aria-label="Close">&#10005;</button></div>
+-<div><label>Title / subject</label><textarea id="ft" rows="2"></textarea></div>
++<h3 class="fs">Document</h3><div><label for="ft">Title / subject</label><textarea id="ft" rows="2"></textarea><small class="er" id="fte" hidden>Enter a title before saving.</small></div>
+ <div><label>Type of document</label><select id="fy"></select></div>
+ <div><label id="lfa">From</label><input id="fa"></div>
+ <div><label>Status</label><select id="fst"></select></div>
+-<div><label>Committee(s)</label><div id="cl" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addCom()" style="margin-top:6px">+ Add committee</button></div>
+-<div class="g2"><div><label>Date received</label><input type="date" id="fd"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
++<h3 class="fs">Routing</h3><div><label>Committee(s)</label><div id="cl" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addCom()" style="margin-top:6px">+ Add committee</button></div>
++<h3 class="fs">Dates</h3><div class="g2"><div><label>Date received</label><input type="date" id="fd"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
+ <div><label>Meeting Dates</label><div id="ss" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addSess()" style="margin-top:6px">+ Add meeting date</button></div>
+-<div class="g2"><div><label>Committee report no.</label><input id="fr" placeholder="CR-2026-04"></div><div><label>Committee report link</label><input id="fl" type="url" placeholder="https://… (Drive, OneDrive, etc.)"></div></div>
++<h3 class="fs">Committee report</h3><div class="g2"><div><label>Committee report no.</label><input id="fr" placeholder="CR-2026-04"></div><div><label>Committee report link</label><input id="fl" type="url" placeholder="https://… (Drive, OneDrive, etc.)"></div></div>
+ <div id="fup"><label>Committee report file</label><input type="file" id="ff" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"><div id="fcur" style="font-size:12px;color:var(--mut);margin-top:4px"></div></div>
+-<div><label>Remarks / next steps</label><textarea id="fk" rows="3"></textarea></div>
+-<button class="pri" onclick="save()">Save</button><button class="ghost" onclick="closeForm()">Cancel</button>
++<h3 class="fs">Notes</h3><div><label>Remarks / next steps</label><textarea id="fk" rows="3"></textarea></div>
++<div class="sb"><button class="pri" onclick="save()">Save</button><button class="ghost" onclick="closeForm()">Cancel</button></div>
+ </div>
+ <div class="dr" id="tp"><div class="dh"><b style="font-size:17px;font-weight:600">Customize appearance</b><button type="button" class="xb" onclick="closeTP()" aria-label="Close">&#10005;</button></div>
+ <div id="tpb" style="display:grid;gap:12px"></div><button class="ghost" onclick="closeTP()">Close</button></div>
+ <div class="dr" id="lg"><b style="font-size:17px;font-weight:600">Staff sign in</b>
+ <div><label>Email</label><input id="le" type="email" autocomplete="username"></div>
+ <div><label>Password</label><input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key=='Enter')login()"></div>
+-<button class="pri" onclick="login()">Sign in</button></div>`);
++<button class="pri" onclick="login()">Sign in</button></div>
++<div id="ts" class="ts" role="status" aria-live="polite"></div><dialog id="cf"><p id="cfm"></p><div class="cfb"><button class="ghost" id="cfn">Cancel</button><button class="pri dg" id="cfy">Delete</button></div></dialog>`);
++let tt;function toast(m,bad){const t=$("ts");t.textContent=m;t.className="ts on"+(bad?" bad":"");clearTimeout(tt);tt=setTimeout(()=>t.className="ts",3500)}
++function ask(m,ok){return new Promise(res=>{const d=$("cf");$("cfm").textContent=m;$("cfy").textContent=ok||"Delete";const f=v=>{d.close();res(v)};$("cfy").onclick=()=>f(true);$("cfn").onclick=()=>f(false);d.oncancel=e=>{e.preventDefault();f(false)};d.showModal()})}
+ const ST=["Received","Received. No Follow-Up Needed","For Follow-Up","1st Reading (Session)","2nd Reading / Deliberated","Pending","For Revision","For Approval","Approved","Deferred","Tabled","Suspended","Disapproved","Implemented / Released","Repealed","Completed / Filed"];
+ const CM=["En Banc","Finance, Budget and Appropriations","Housing and Land Use","Barangay Affairs & Boundary Disputes","Good Government, Public Ethics and Accountability","Rules, Resolutions and Ordinances","Health, Sanitation and Nutrition","Transportation","Infrastructure and Public Works","Peace and Order, Security and Human Rights","Education, Culture and Arts","Agriculture, Trade and Industry","Cooperatives","Ways and Means","Women, Family and Social Services","Youth and Sports Development","Environmental Protection and Natural Resources","Tourism","Local Economic Enterprises (Waterworks, Market, Slaughterhouse & Cemetery)","Project Monitoring & Oversight","Games and Amusement","Communication and Information Technology","Disaster Preparedness and Resiliency","MTFRB"];
+ const TYG=[["1. Legislative Documents",["Proposed Ordinance","Proposed Resolution","Appropriation Ordinance","Supplemental Appropriation Ordinance","Committee Report","Legislative Proposal"]],
+@@ -44,7 +47,7 @@ const today=()=>iso(new Date());
+ const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+ const fmtDate=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||"");return m?MO[+m[2]-1]+"-"+(+m[3])+"-"+m[1]:(v||"")};
+ const diff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
+-let sel=new Set(),curRows=[],AS=null,sess=[],coms=[],col=null,local=true,data=[],editId=null,F={st:"",cm:""},sort={k:"filed",d:-1};
++let sel=new Set(),curRows=[],AS=null,sess=[],coms=[],col=null,local=true,data=[],editId=null,F={st:"",cm:"",od:new URLSearchParams(location.search).get("od")=="1"},sort={k:"filed",d:-1};
+ if(!HOME){const c0=new URLSearchParams(location.search).get("cm");if(c0)F.cm=c0}
+ try{data=JSON.parse(localStorage.getItem("sbtracker")||"[]");data.forEach(norm)}catch(e){}
+ const persist=()=>{if(local)try{localStorage.setItem("sbtracker",JSON.stringify(data))}catch(e){}};
+@@ -79,10 +82,15 @@ const alCls=a=>a==AL.od?"o":a==AL.warn?"t":a==AL.ok?"":"n";
+ const cols=[["title","Title"],["type","Type"],["author","From"],["committee","Committee"],["status","Status"],["filed","Received"],["","Meeting Dates"],["mayor","Approved"],["","Committee report"],["dp","Days in pipeline"],["ls","Days since last meeting"],["al","Alert"]];
+ if($("th"))$("th").innerHTML='<th><input type="checkbox" id="sa" onchange="selAll(this.checked)"></th>'+cols.map(c=>`<th onclick="${c[0]?`srt('${c[0]}')`:""}">${c[1]}</th>`).join("");
+ const val=(r,k)=>k=="dp"?(dp(r)??-1):k=="ls"?(dls(r)??-1):k=="ds"?(ds(r)??-1):k=="al"?al(r):(r[k]||"");
++let VW="docket";try{VW=localStorage.getItem("sbview")||"docket"}catch(e){}
++function setV(v){VW=v;try{localStorage.setItem("sbview",v)}catch(e){}render()}
++function srtSel(v){const[k,d]=v.split(":");sort={k,d:+d};render()}
+ function srt(k){sort=sort.k==k?{k,d:-sort.d}:{k,d:1};render()}
+ function setF(t,v){F[t]=F[t]==v?"":v;render()}
+ function setCm(v){F.cm=v;render()}
+ function openCm(m){location.href="legislative.html?cm="+encodeURIComponent(m)}
++const alH=(X,a,cl,tip)=>`<span class="al" tabindex="0" role="button" aria-label="${esc(a+". "+tip)}" onclick="this.classList.toggle('open')" onkeydown="if(event.key=='Enter'||event.key==' '){event.preventDefault();this.classList.toggle('open')}" onblur="this.classList.remove('open')"><span class="pill ${cl}">${a}</span>${X.tags.length?`<small class="at">${X.tags.join(" + ")}</small>`:""}<span class="tip" role="tooltip">${X.why.length?X.why.map(w=>`<div>${esc(w)}</div>`).join(""):esc(a)}</span></span>`;
++const brh=(l,d)=>d===null?"":`<div class="br l${lvl(d)}" title="${l}: ${d} days"><span>${l}</span><i style="--w:${Math.min(100,Math.round(d/45*100))}%"></i><b>${d}d</b></div>`;
+ function render(){persist();const base=HOME?data:data.filter(r=>sc()?isB(r):!isB(r)),c=f=>base.filter(f).length;
+ $("kpis").innerHTML=[["Total Agenda Received",base.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (pipeline or meeting >30 days)",c(r=>al(r)==AL.od),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
+ const CS=["Received","1st Reading (Session)","2nd Reading / Deliberated","Pending","Approved"];
+@@ -92,13 +100,19 @@ $("cc").innerHTML=CMS.map(m=>{const l=data.filter(r=>cms(r).includes(m));return
+ const TYX=[...new Set(data.map(r=>r.type).filter(t=>t&&!TY.includes(t)))];
+ const tyRow=t=>{const l=data.filter(r=>r.type==t);return `<tr><td>${esc(t)}</td><td><b>${l.length}</b></td>${CS.map(s=>{const n=l.filter(r=>r.status==s).length;return `<td class="${n?"":"z"}">${n}</td>`}).join("")}</tr>`};
+ $("tyb").innerHTML=TYG.map(g=>`<tr class="gh"><td colspan="7">${esc(g[0])}</td></tr>`+g[1].map(tyRow).join("")).join("")+(TYX.length?`<tr class="gh"><td colspan="7">Other / previous types</td></tr>`+TYX.map(tyRow).join(""):"");
++const hot=data.map(r=>({r,w:al(r)==AL.od?Math.max(dp(r)??0,dls(r)??0):-1})).filter(o=>o.w>=0).sort((x,y)=>y.w-x.w);
++$("nc").textContent=hot.length+" overdue";
++$("na").innerHTML=hot.length?hot.slice(0,8).map(({r})=>{const w=alx(r).why[0]||"";return `<a class="na" href="${isB(r)?"barangay":"legislative"}.html?od=1"><span class="nt">${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</span><span class="nm">${esc(r.status)}, ${esc(cms(r)[0]||"No committee")}</span><span class="nd">${esc(w.replace(/^Overdue \u2013 /,""))}</span></a>`}).join("")+(hot.length>8?`<p class="mo">${hot.length-8} more overdue. Open a register and use Overdue only.</p>`:""):`<p class="empty">No overdue agenda. Everything is on track or finished.</p>`;
+ return}
+ const dS=data.filter(r=>sc()?isB(r):!isB(r)),dd=dS.filter(r=>!F.cm||cms(r).includes(F.cm)),cd=f=>dd.filter(f).length;
+ const od=s=>cd(r=>r.status==s&&al(r)==AL.od);
+-$("cs").innerHTML=ST.map(s=>{const n=cd(r=>r.status==s),o=od(s);return `<div class="pl ${F.st==s?"on":""}" onclick='setF("st",${jq(s)})'><span>${esc(s)}</span><b>${n}</b>${o?`<em>${o} overdue</em>`:"<span></span>"}</div>`}).join("");
++const GR=[["Intake",["Received","For Follow-Up"]],["Session",["1st Reading (Session)","2nd Reading / Deliberated"]],["Committee",["Pending","For Revision","For Approval"]],["On hold",["Deferred","Suspended"]]];GR.push(["Closed",ST.filter(s=>!GR.some(g=>g[1].includes(s)))]);
++const chip=s=>{const n=cd(r=>r.status==s),o=od(s);return `<button type="button" class="pl ${F.st==s?"on":""}" aria-pressed="${F.st==s}" onclick='setF("st",${jq(s)})'><span>${esc(s)}</span><b>${n}</b>${o?`<em title="${o} overdue">\u2691 ${o}</em>`:""}</button>`};
++$("cs").innerHTML=GR.map(g=>`<div class="gr${g[0]=="Closed"?" cl":""}"><h3>${g[0]}</h3><div class="gc">${g[1].map(chip).join("")}</div></div>`).join("");
+ $("fcm").innerHTML='<option value="">All committees</option>'+CMS.map(m=>`<option ${m==F.cm?"selected":""}>${esc(m)}</option>`).join("");
++$("fod").checked=F.od;$("tbw").hidden=VW=="docket";$("dk").hidden=VW!="docket";$("vd").classList.toggle("on",VW=="docket");$("vt").classList.toggle("on",VW!="docket");
+ const q=$("q").value.toLowerCase();
+-const rows=dS.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||cms(r).includes(F.cm))&&(!q||((r.no||"")+" "+(r.title||"")+" "+(r.author||"")).toLowerCase().includes(q)))
++const rows=dS.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||cms(r).includes(F.cm))&&(!F.od||al(r)==AL.od)&&(!q||((r.no||"")+" "+(r.title||"")+" "+(r.author||"")).toLowerCase().includes(q)))
+ .sort((x,y)=>{const a=val(x,sort.k),b=val(y,sort.k);return (a>b?1:a<b?-1:0)*sort.d});
+ curRows=rows;for(const id of [...sel])if(!data.some(d=>d.id==id))sel.delete(id);
+ $("bd").hidden=!sel.size;$("bd").textContent="Delete selected ("+sel.size+")";$("sa").checked=!!rows.length&&rows.every(r=>sel.has(r.id));
+@@ -107,22 +121,24 @@ $("cnt").textContent=rows.length+" of "+dS.length+" shown";
+ $("tb").innerHTML=rows.length?rows.map(r=>{const X=alx(r),a=X.a,cl=alCls(a),tip=X.why.length?X.why.join(" "):a;
+ return `<tr><td style="white-space:nowrap"><div style="display:flex;align-items:center;gap:2px"><input type="checkbox" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></td><td class="t">${r.no?`<b>${esc(r.no)}</b> · `:""}${esc(r.title)}${r.remarks?`<br><small>${esc(r.remarks)}</small>`:""}</td><td>${esc(r.type)}</td><td>${esc(r.author)||"–"}</td><td>${cms(r).map(m=>`<div>${esc(m)}</div>`).join("")||"–"}</td>
+ <td><select onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(s=>`<option ${s==r.status?"selected":""}>${esc(s)}</option>`).join("")}</select></td>
+-<td style="white-space:nowrap">${fmtDate(r.filed)||"–"}</td><td>${(r.sessions||[]).map(d=>`<div style="white-space:nowrap">${esc(fmtDate(d))}</div>`).join("")||"–"}</td><td style="white-space:nowrap">${esc(fmtDate(r.mayor))||"–"}</td><td>${rep(r)}</td><td>${dp(r)??"–"}</td><td>${dls(r)??"–"}</td><td><span class="al" tabindex="0" role="button" aria-label="${esc(a+". "+tip)}" onclick="this.classList.toggle('open')" onkeydown="if(event.key=='Enter'||event.key==' '){event.preventDefault();this.classList.toggle('open')}" onblur="this.classList.remove('open')"><span class="pill ${cl}">${a}</span>${X.tags.length?`<small class="at">${X.tags.join(" + ")}</small>`:""}<span class="tip" role="tooltip">${X.why.length?X.why.map(w=>`<div>${esc(w)}</div>`).join(""):esc(a)}</span></span></td>
+-</tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`}
++<td style="white-space:nowrap">${fmtDate(r.filed)||"–"}</td><td>${(r.sessions||[]).map(d=>`<div style="white-space:nowrap">${esc(fmtDate(d))}</div>`).join("")||"–"}</td><td style="white-space:nowrap">${esc(fmtDate(r.mayor))||"–"}</td><td>${rep(r)}</td><td>${dp(r)??"–"}</td><td>${dls(r)??"–"}</td><td>${alH(X,a,cl,tip)}</td>
++</tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`;
++$("dk").innerHTML=rows.length?rows.map(r=>{const X=alx(r),a=X.a,cl=alCls(a),tip=X.why.length?X.why.join(" "):a,ss=(r.sessions||[]).map(fmtDate).join(", ");
++return `<article class="dk ${cl?"k"+cl:""}"><input type="checkbox" aria-label="Select" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><div class="dm"><h3>${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</h3><p>${[r.type,r.author].filter(Boolean).map(x=>esc(x)).join(", ")}${cms(r).length?`<br>${cms(r).map(x=>esc(x)).join("; ")}`:""}</p><p>Received ${esc(fmtDate(r.filed))||"–"}${r.mayor?`. Approved ${esc(fmtDate(r.mayor))}`:""}${ss?`. Meetings ${esc(ss)}`:""}</p>${rep(r)!="–"?`<p>Report: ${rep(r)}</p>`:""}${r.remarks?`<p class="rk">${esc(r.remarks)}</p>`:""}</div><div class="ds"><select aria-label="Status" onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(x=>`<option ${x==r.status?"selected":""}>${esc(x)}</option>`).join("")}</select>${brh("In pipeline",dp(r))}${brh("Since meeting",dls(r))}${alH(X,a,cl,tip)}<div class="ac"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></div></article>`}).join(""):`<p class="empty">No agenda items match these filters.</p>`}
+ function setStatus(id,s){const r=data.find(x=>x.id==id);if(!r)return;const was=r.status;r.status=s;r.stageDate=today();
+ if(APPR.includes(s)){if(!r.mayor)r.mayor=today()}else if(APPR.includes(was))r.mayor="";
+ render();sync(r).then(ok=>{if(!ok)load()})}
+ function selOne(id,on){on?sel.add(id):sel.delete(id);render()}
+ function selAll(on){curRows.forEach(r=>on?sel.add(r.id):sel.delete(r.id));render()}
+-function delSel(){const n=sel.size;if(!n||!confirm("Delete "+n+" selected agenda item"+(n>1?"s":"")+"? This cannot be undone."))return;
+-const ids=[...sel],rs=data.filter(x=>sel.has(x.id));data=data.filter(x=>!sel.has(x.id));sel.clear();render();if(!col)return;
++async function delSel(){const n=sel.size;if(!n||!await ask("Delete "+n+" selected agenda item"+(n>1?"s":"")+"? This cannot be undone."))return;
++const ids=[...sel],rs=data.filter(x=>sel.has(x.id));data=data.filter(x=>!sel.has(x.id));sel.clear();render();toast("Deleted");if(!col)return;
+ SB.from("measures").delete().in("id",ids).select().then(async({data:d,error})=>{
+ if(error||!d||!d.length){werr(error||{message:"Delete was not permitted."});load();return}
+ if(d.length<ids.length)load();
+ const gone=new Set(d.map(x=>x.id));
+ for(const r of rs)if(gone.has(r.id)){if(r.reportFile)await SB.storage.from("reports").remove([r.reportFile.id]);await wipeFiles(r.id)}})}
+-function del(id){if(!confirm("Delete this agenda item?"))return;const r=data.find(x=>x.id==id);if(!r)return;
+-data=data.filter(x=>x.id!=id);render();if(!col)return;
++async function del(id){if(!await ask("Delete this agenda item? This cannot be undone."))return;const r=data.find(x=>x.id==id);if(!r)return;
++data=data.filter(x=>x.id!=id);render();toast("Deleted");if(!col)return;
+ SB.from("measures").delete().eq("id",id).select().then(async({data:d,error})=>{
+ if(error||!d||!d.length){werr(error||{message:"Delete was not permitted."});load();return}
+ if(r.reportFile)await SB.storage.from("reports").remove([r.reportFile.id]);
+@@ -130,10 +146,10 @@ await wipeFiles(id)})}
+ const M={ft:"title",fy:"type",fa:"author",fst:"status",fd:"filed",fr:"report",fl:"reportLink",fm:"mayor",fk:"remarks"};
+ function fillTypes(bg){$("fy").innerHTML=TYG.map(g=>`<optgroup label="${esc(g[0])}">${g[1].map(x=>`<option>${esc(x)}</option>`).join("")}</optgroup>`).join("")}
+ function openForm(id){editId=id||null;const r=id?data.find(x=>x.id==id):{filed:today(),type:sc()?BT[0]:TY[0],status:ST[0],committee:CM[0]};if(id&&!r)return;
+-fillTypes();$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on");$("dr").scrollTop=0}
++fillTypes();$("fte").hidden=true;$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on");$("dr").scrollTop=0}
+ function closeForm(){$("dr").classList.remove("on")}
+ let saving=false;
+-async function save(){if(saving)return;if(!$("ft").value.trim()){alert("Title is required.");return}
++async function save(){if(saving)return;if(!$("ft").value.trim()){$("fte").hidden=false;$("ft").focus();return}
+ saving=true;try{
+ const isNew=!editId,r=isNew?{id:Date.now(),stageDate:today()}:data.find(x=>x.id==editId);
+ if(!r){alert("This item no longer exists.");closeForm();return}
+@@ -144,7 +160,7 @@ const fl=$("ff").files[0];
+ if(fl&&AS){try{const u=await AS.upload(fl,r.id);up={id:u.id,name:fl.name};r.reportFile=up}catch(e){alert("File upload failed: "+((e&&e.message)||"not permitted"))}}
+ if(old!==r.status)r.stageDate=today();
+ if(isNew)data.unshift(r);
+-const ok=await sync(r);closeForm();render();
++const ok=await sync(r);closeForm();render();if(ok)toast("Saved");
+ if(ok){if(up&&prev&&prev.id!==up.id&&SB)SB.storage.from("reports").remove([prev.id])}
+ else{if(up&&SB)SB.storage.from("reports").remove([up.id]);load()}
+ }finally{saving=false}}
+@@ -153,7 +169,7 @@ function addCom(){const n=CM.find(m=>!coms.includes(m));if(n){coms.push(n);drawC
+ function rep(r){const a=[];if(r.report)a.push(esc(r.report));if(r.reportLink&&/^https?:\/\//i.test(r.reportLink))a.push(`<a href="${esc(r.reportLink)}" target="_blank" rel="noopener">Link</a>`);if(r.reportFile)a.push(`<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>`);return a.join("<br>")||"–"}
+ function drawSess(){$("ss").innerHTML=sess.map((d,i)=>`<div style="display:flex;gap:6px"><input type="date" value="${esc(d)}" onchange="sess[${i}]=this.value"><button type="button" class="ghost" onclick="sess.splice(${i},1);drawSess()">✕</button></div>`).join("")||'<small style="color:var(--mut)">No meeting dates yet</small>'}
+ function addSess(){sess.push(today());drawSess()}
+-function werr(e){alert("Could not save: "+((e&&e.message)||"you do not have permission to edit."))}
++function werr(e){toast("Could not save: "+((e&&e.message)||"you do not have permission to edit."),1)}
+ const CFG=typeof SB_CONFIG!=="undefined"?SB_CONFIG:null;
+ const SB=CFG&&CFG.url&&CFG.key&&!/YOUR-/.test(CFG.url+CFG.key)&&typeof supabase!=="undefined"?supabase.createClient(CFG.url,CFG.key):null;
+ const toRow=r=>({id:r.id,no:r.no||"",title:r.title,type:r.type||"",author:r.author||"",status:r.status,committee:r.committee||"",filed:r.filed||null,stage_date:r.stageDate||null,mayor:r.mayor||null,report:r.report||null,report_link:r.reportLink||null,report_file:r.reportFile||null,remarks:r.remarks||null,sessions:r.sessions||[],updated_at:new Date().toISOString()});
+diff --git a/barangay.html b/barangay.html
+index 1b17e19..67b310e 100644
+--- a/barangay.html
++++ b/barangay.html
+@@ -10,9 +10,9 @@
+ <div class="kpis" id="kpis"></div>
+ <div class="pg on">
+ <div class="card"><h2><span id="pt">Barangay Documents – Pipeline by Stage</span> <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div><div class="leg"><span>Red tag = overdue (more than 30 days in pipeline OR since the last meeting). Hover or click an alert for the reason.</span></div></div>
+-<div class="fbar"><label for="fcm">Filter by committee</label><select id="fcm" onchange="setCm(this.value)"></select></div>
++<div class="fbar"><label for="fcm">Committee</label><select id="fcm" onchange="setCm(this.value)"></select><label class="ck2"><input type="checkbox" id="fod" onchange="F.od=this.checked;render()">Overdue only</label><label for="fs">Sort</label><select id="fs" onchange="srtSel(this.value)"><option value="filed:-1">Newest received</option><option value="dp:-1">Longest in pipeline</option><option value="ls:-1">Longest since meeting</option><option value="title:1">Title</option></select><div class="seg vw"><button type="button" id="vd" onclick="setV('docket')">Docket</button><button type="button" id="vt" onclick="setV('table')">Table</button></div></div>
+ <div class="card"><h2><span><span id="rt">Barangay Documents Register</span> <span id="chips"></span></span><span style="display:flex;gap:12px;align-items:center"><button class="ghost" id="bd" hidden onclick="delSel()" style="padding:6px 12px;color:var(--warn);border-color:var(--warn)">Delete selected</button><span style="font-weight:400;font-size:13px;color:var(--mut)" id="cnt"></span></span></h2>
+-<div class="tw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div></div>
++<div class="tw" id="tbw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div><div id="dk" class="dkl"></div></div>
+ </div>
+ </main>
+ <script src="app.js"></script>
+diff --git a/data.filter(f).length b/data.filter(f).length
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/index.html b/index.html
+index 5af0853..1584627 100644
+--- a/index.html
++++ b/index.html
+@@ -8,9 +8,9 @@
+ <body data-page="home">
+ <script src="shell.js"></script>
+ <main>
+-<section class="welcome"><h2>Welcome to the SB Agenda Tracker</h2><p>Track every agenda item of the Sangguniang Bayan of Mogpog from filing to final action. The figures below come from the live register.</p></section>
++<section class="card"><h2>Needs attention <span id="nc"></span></h2><div id="na"></div></section>
+ <div class="kpis" id="kpis"></div>
+-<div class="pg on">
++<div class="pg on two">
+ <div class="card"><h2>Committee Workload</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Committee</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="cc"></tbody></table></div></div>
+ <div class="card"><h2>Types of Documents</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Type of Document</th><th>Total</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="tyb"></tbody></table></div></div>
+ </div>
+diff --git a/legislative.html b/legislative.html
+index cde8097..36ac44c 100644
+--- a/legislative.html
++++ b/legislative.html
+@@ -10,9 +10,9 @@
+ <div class="kpis" id="kpis"></div>
+ <div class="pg on">
+ <div class="card"><h2><span id="pt">Pipeline by Stage</span> <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div><div class="leg"><span>Red tag = overdue (more than 30 days in pipeline OR since the last meeting). Hover or click an alert for the reason.</span></div></div>
+-<div class="fbar"><label for="fcm">Filter by committee</label><select id="fcm" onchange="setCm(this.value)"></select></div>
++<div class="fbar"><label for="fcm">Committee</label><select id="fcm" onchange="setCm(this.value)"></select><label class="ck2"><input type="checkbox" id="fod" onchange="F.od=this.checked;render()">Overdue only</label><label for="fs">Sort</label><select id="fs" onchange="srtSel(this.value)"><option value="filed:-1">Newest received</option><option value="dp:-1">Longest in pipeline</option><option value="ls:-1">Longest since meeting</option><option value="title:1">Title</option></select><div class="seg vw"><button type="button" id="vd" onclick="setV('docket')">Docket</button><button type="button" id="vt" onclick="setV('table')">Table</button></div></div>
+ <div class="card"><h2><span><span id="rt">Legislative Register</span> <span id="chips"></span></span><span style="display:flex;gap:12px;align-items:center"><button class="ghost" id="bd" hidden onclick="delSel()" style="padding:6px 12px;color:var(--warn);border-color:var(--warn)">Delete selected</button><span style="font-weight:400;font-size:13px;color:var(--mut)" id="cnt"></span></span></h2>
+-<div class="tw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div></div>
++<div class="tw" id="tbw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div><div id="dk" class="dkl"></div></div>
+ </div>
+ </main>
+ <script src="app.js"></script>
+diff --git a/shell.js b/shell.js
+index ce5917a..38cd43c 100644
+--- a/shell.js
++++ b/shell.js
+@@ -1,15 +1,8 @@
+-// Shared sidebar + top bar. Loaded at the top of <body>; each page sets <body data-page="home|legislative|barangay">.
++// Shared top bar. Loaded at the top of <body>; each page sets <body data-page="home|legislative|barangay">.
+ const PAGE=document.body.dataset.page||"home",HOME=PAGE==="home";
+-const I={home:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/>',legislative:'<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/>',barangay:'<path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/>'};
+ const NAV=[["home","index.html","Dashboard"],["legislative","legislative.html","Legislative Documents"],["barangay","barangay.html","Barangay Documents"]];
+ const TTL=(NAV.find(n=>n[0]===PAGE)||NAV[0])[2];
+-try{if(localStorage.getItem("sbc")==="1")document.body.classList.add("sbc")}catch(e){}
+-document.body.insertAdjacentHTML("afterbegin",`<aside class="side" aria-label="Main navigation">
+-<div class="brand"><img class="logo" alt="Seal of the Sangguniang Bayan of Mogpog" src="logo.jpg"><div class="tx"><b>SB Agenda Tracker</b><small>Sangguniang Bayan<br>Mogpog, Marinduque</small></div></div>
+-<nav>${NAV.map(n=>`<a href="${n[1]}" title="${n[2]}"${n[0]===PAGE?' class="on" aria-current="page"':""}><svg viewBox="0 0 24 24" aria-hidden="true">${I[n[0]]}</svg><span class="tx">${n[2]}</span></a>`).join("")}</nav>
+-<button class="sc" type="button" aria-label="Collapse or expand sidebar" onclick="document.body.classList.toggle('sbc');try{localStorage.setItem('sbc',document.body.classList.contains('sbc')?1:0)}catch(e){}">&#8249;&#8249;</button></aside>
+-<div class="top"><button class="hb ghost" type="button" aria-label="Open menu" onclick="document.body.classList.toggle('sbo')">&#9776;</button>
+-<h1><small>SB Agenda Tracker / ${TTL}</small>${TTL}</h1>
+-<span class="dt">${new Date().toLocaleDateString("en-PH",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</span>
+-${HOME?"":'<input id="q" placeholder="Search title or from\u2026" oninput="render()">'}
+-<button class="ghost" id="so" hidden onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button><button class="ghost" onclick="openTP()">&#9881;&#xFE0E; Customize</button><button class="pri" id="ab" onclick="openForm()">+ Add Agenda</button></div>`);
++document.body.insertAdjacentHTML("afterbegin",`<header class="top"><a class="brand" href="index.html"><img class="logo" alt="Seal of the Sangguniang Bayan of Mogpog" src="logo.jpg"><span class="bt"><b>Sangguniang Bayan of Mogpog</b><small>Agenda Tracker</small></span></a>
++<nav aria-label="Main navigation">${NAV.map(n=>`<a href="${n[1]}"${n[0]===PAGE?' class="on" aria-current="page"':""}>${n[2]}</a>`).join("")}</nav>
++<div class="act">${HOME?"":'<input id="q" type="search" aria-label="Search" placeholder="Search title or from" oninput="render()">'}<button class="ghost" id="so" hidden onclick="SB.auth.signOut().then(()=>location.reload())">Sign out</button><button class="ghost" onclick="openTP()">Customize</button><button class="pri" id="ab" onclick="openForm()">Add agenda</button></div></header>
++<div class="ph"><h1>${TTL}</h1><span class="dt">${new Date().toLocaleDateString("en-PH",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</span></div>`);
+diff --git a/styles.css b/styles.css
+index b9e45a2..74655bb 100644
+--- a/styles.css
++++ b/styles.css
+@@ -1,100 +1,98 @@
+-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap");
+-/* Shared styles for every page of the Agenda Tracker. */
+-:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+---sub:#F1F3F5;--pri2:#E3E7EB;--sec:#E3E7EB;--acc:#737B86;--bg:#F7F8FA;--card:#FFFFFF;--tx:#272D35;--mut:#69727E;--bd:#E1E5EA;--pri:#626C78;--btx:#FFFFFF;--btnh:#4F5965;--lnk:#505D6C;--ring:#737B86;
+---ok:#1a7f4b;--okbg:#e3f5ec;--warn:#b42318;--warnbg:#fde8e6;--amb:#8a5a00;--ambbg:#fff3d6;--c1:#737B86;--c2:#e0a100;--c3:#1a7f4b;--c4:#69727E}
+-html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+-body{margin:0;background:var(--bg);color:var(--tx);font:400 15px/1.45 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+-.top{display:flex;align-items:center;gap:12px;padding:14px 24px;background:linear-gradient(180deg,var(--sub),var(--bg));border-bottom:1px solid var(--bd);flex-wrap:wrap}
+-.top h1{font-size:28px;font-weight:700;line-height:1.2;margin:0;flex:1 1 260px}.top h1 small{display:block;font-weight:400;color:var(--mut);font-size:13px;margin-top:2px}
+-input,select,textarea{padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;width:100%}
+-.top input{width:260px}
+-button{font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+-.pri{background:var(--pri);color:var(--btx);border:0;padding:9px 16px;border-radius:8px}
+-.pri:hover{background:var(--btnh)}
+-:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+-.dr .x{justify-self:end}
+-.seg{display:flex;gap:6px}.seg button{flex:1;padding:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px}.seg button.on{background:var(--pri);color:var(--btx);border-color:var(--pri)}
+-.tg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tc{display:grid;gap:8px;text-align:left;padding:10px;border:2px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)}.tc.on{border-color:var(--pri)}.sw{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--bd)}.sw i{flex:1}
+-.ghost{background:none;border:1px solid var(--bd);color:var(--tx);padding:9px 16px;border-radius:8px}
+-main{max-width:1500px;margin:0 auto;padding:20px 24px;display:grid;gap:16px}
+-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+-.kpi{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;border-left:4px solid var(--acc);box-shadow:0 1px 3px rgba(0,0,0,.07)}
+-.kpi b{font-size:28px;display:block;line-height:1.1}.kpi span{color:var(--mut);font-size:15px;font-weight:600}
+-.kpi.w{border-left-color:var(--warn)}.kpi.w b{color:var(--warn)}
+-.charts{display:grid;grid-template-columns:1fr 3fr;gap:16px;align-items:start}
+-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+-.card h2{font-size:20px;font-weight:600;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center}
+-.card h2 a{font-weight:400;font-size:13px;color:var(--lnk);cursor:pointer}
+-.leg{display:flex;gap:14px;font-size:12px;color:var(--mut);margin-top:8px;flex-wrap:wrap}
+-.tw{overflow-x:auto}
+-table{border-collapse:collapse;width:100%;min-width:1500px}
+-th{text-align:left;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);padding:8px;border-bottom:1px solid var(--bd);cursor:pointer;white-space:nowrap}
+-td{padding:9px 8px;font-size:14px;font-weight:400;border-bottom:1px solid var(--bd);vertical-align:top}
+-tbody tr:nth-child(even) td{background:var(--zb)}
+-tbody tr:hover td{background:var(--pri2)}
+-td select{padding:5px;font-size:13px;width:210px}
+-.t{min-width:380px;max-width:600px}.t small{color:var(--mut);font-size:13px}
+-.pill{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--okbg);color:var(--ok);white-space:nowrap}
+-.al{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;cursor:help;outline-offset:3px}
+-.al .at{font-size:11px;color:var(--mut);white-space:nowrap}
+-.al .tip{display:none;position:absolute;right:0;top:100%;margin-top:4px;z-index:15;min-width:220px;max-width:min(300px,80vw);padding:8px 10px;border-radius:8px;background:var(--tx);color:var(--bg);font-size:12px;line-height:1.4;box-shadow:0 4px 14px #0004;white-space:normal}
+-.al .tip div+div{margin-top:4px}
+-.al:hover .tip,.al:focus .tip,.al.open .tip{display:block}
+-.pill.o{background:var(--warnbg);color:var(--warn)}.pill.t{background:var(--ambbg);color:var(--amb)}.pill.n{background:var(--pri2);color:var(--tx)}
+-td button{background:none;border:0;color:var(--lnk);padding:2px 6px}td button.d{color:var(--warn)}td a{color:var(--lnk)}
+-.chip{display:inline-block;background:var(--pri2);color:var(--lnk);border-radius:99px;padding:2px 10px;font-size:12px;margin-left:6px;cursor:pointer}
+-.dr{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--bg);border-left:1px solid var(--bd);transform:translateX(100%);transition:transform .2s;z-index:20;padding:20px;overflow:auto;display:grid;gap:10px;align-content:start;box-shadow:-6px 0 20px #0003}
+-.dh{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-20px;margin:-20px -20px 0;padding:14px 20px;background:var(--bg);border-bottom:1px solid var(--bd);z-index:2}
+-.xb{background:none;border:0;font-size:20px;line-height:1;color:var(--mut);padding:4px 8px;border-radius:6px}.xb:hover{background:var(--pri2);color:var(--tx)}
+-.gh td{background:var(--sec)!important;font-weight:600;text-align:left!important;font-size:13px;color:var(--lnk)}
+-.fbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.fbar label{font-size:13px;font-weight:600;color:var(--mut)}.fbar select{width:min(460px,100%)}
+-.clk{cursor:pointer}.clk:hover td:first-child{text-decoration:underline;color:var(--lnk)}
+-.dr.on{transform:none}.dr label{font-size:13px;font-weight:600;color:var(--mut);display:block;margin-bottom:3px}
+-.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+-.empty{text-align:center;color:var(--mut);padding:30px}
++@import url("https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Public+Sans:wght@400;500;600&display=swap");
++/* SB Agenda Tracker. Tokens, base, shell, components, pages, print. Theme colours are set at runtime by theme.js. */
++:root{--sub:#EFEAE5;--pri2:#F1E9E7;--sec:#F3EEEA;--acc:#C8961A;--bg:#F5F6F8;--card:#fff;--tx:#1D2230;--mut:#5B6472;--bd:#D9DDE3;--pri:#7A1414;--btx:#fff;--btnh:#521010;--lnk:#7A1414;--ring:#7A1414;--ok:#1a7f4b;--okbg:#e3f5ec;--warn:#b42318;--warnbg:#fde8e6;--amb:#8a5a00;--ambbg:#fff3d6;--r:6px;--fh:Newsreader,Georgia,serif;--fb:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
++html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}[hidden]{display:none!important}
++body{margin:0;background:var(--bg);color:var(--tx);font:400 15px/1.5 var(--fb);font-variant-numeric:tabular-nums}
++button{font:500 14px var(--fb);cursor:pointer}:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
++input,select,textarea{padding:8px 10px;border:1px solid var(--bd);border-radius:var(--r);background:var(--card);color:var(--tx);font:inherit;width:100%}
+ input[type=checkbox]{width:16px;height:16px;padding:0;accent-color:var(--pri)}
+-.ct{min-width:0}.ct th{cursor:default;text-align:center;position:sticky;top:0;background:var(--card)}.ct th:first-child,.ct td:first-child{text-align:left}.ct td{text-align:center;padding:6px 8px;font-size:13px}.ct td.z{color:var(--mut);opacity:.5}
+-.pl{display:grid;grid-template-columns:1fr 44px 90px;gap:10px;align-items:center;padding:6px;border-radius:6px;cursor:pointer;font-size:14px}.pl:hover,.pl.on{background:var(--pri2)}.pl b{font-size:16px;text-align:right}.pl em{font-style:normal;font-size:12px;color:var(--warn);background:var(--warnbg);padding:2px 8px;border-radius:99px;text-align:center;white-space:nowrap}
+-body.lock main,body.lock #q,body.lock .top .pri,body.lock .nav{display:none}
+-.nav{display:flex;gap:8px;padding:10px 24px;background:var(--bg);flex-wrap:wrap}.nav a{padding:8px 18px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;text-decoration:none;font-size:14px;font-weight:500}.nav a.on{background:var(--pri);color:var(--btx);border-color:var(--pri)}
+-.pg{display:none}.pg.on{display:grid;gap:16px}
+-#cs{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px 28px}
+-.logo{width:60px;height:60px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+-.tc b{font-size:14px;font-weight:600}.tc small{font-weight:400;font-size:12px;color:var(--mut)}.tc.on{box-shadow:0 0 0 2px var(--ring) inset}.ck{font-style:normal;font-size:12px;font-weight:600;color:var(--lnk)}
++.pri{background:var(--pri);color:var(--btx);border:0;padding:9px 16px;border-radius:var(--r);font-weight:600}.pri:hover{background:var(--btnh)}
++.pri.dg{background:var(--warn);color:#fff}
++.ghost{background:none;border:1px solid var(--bd);color:var(--tx);padding:9px 16px;border-radius:var(--r)}
++/* Shell */
++.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:8px 24px;flex-wrap:wrap;padding:10px 28px;background:var(--pri);color:var(--btx)}
++.top :focus-visible{outline-color:var(--btx)}
++.brand{display:flex;gap:12px;align-items:center;color:inherit;text-decoration:none}
++.logo{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--acc)}
++.bt b{display:block;font:600 18px/1.15 var(--fh)}.bt small{font-size:12px;opacity:.8}
++.top nav{display:flex;gap:4px;margin-right:auto}
++.top nav a{padding:10px 14px;color:inherit;text-decoration:none;font-weight:500;font-size:14px;border-radius:var(--r) var(--r) 0 0}
++.top nav a:hover{background:#ffffff1f}.top nav a.on{font-weight:600;box-shadow:inset 0 -3px var(--acc)}
++.act{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
++.top input{width:240px;background:#ffffff24;border-color:#ffffff59;color:inherit}.top input::placeholder{color:inherit;opacity:.75}
++.top .ghost{color:inherit;border-color:color-mix(in srgb,currentColor 45%,transparent)}.top .ghost:hover{background:#ffffff1f}
++.top .pri{background:var(--btx);color:var(--pri)}.top .pri:hover{background:var(--sub)}
++.ph{max-width:1500px;margin:0 auto;padding:22px 28px 0;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
++.ph h1{font:600 30px/1.15 var(--fh);margin:0}.dt{font-size:13px;color:var(--mut)}
++main{max-width:1500px;margin:0 auto;padding:16px 28px 40px;display:grid;gap:18px}
++body.lock main,body.lock .ph,body.lock .top nav,body.lock .top .act{display:none}
++.pg{display:none}.pg.on{display:grid;gap:18px}.two{grid-template-columns:1fr}
++@media(min-width:1200px){.two{grid-template-columns:1fr 1fr;align-items:start}}
++/* Cards, figures */
++.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px 20px;overflow:hidden}
++.card h2{font:600 20px/1.2 var(--fh);margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:12px}
++.card h2 a{font:400 13px var(--fb);color:var(--lnk);cursor:pointer}
++.leg{display:flex;font-size:12px;color:var(--mut);margin-top:10px}
++.kpis{display:flex;flex-wrap:wrap;background:var(--card);border:1px solid var(--bd);border-radius:10px}
++.kpi{flex:1 1 130px;padding:14px 18px;border-left:1px solid var(--bd)}.kpi:first-child{border-left:0}
++.kpi b{display:block;font:600 32px/1.1 var(--fh)}.kpi span{color:var(--mut);font-size:13px}.kpi.w b{color:var(--warn)}
++#nc{font:600 13px var(--fb);color:var(--warn)}
++.na{display:grid;grid-template-columns:1fr auto;gap:2px 16px;padding:10px 12px;border-top:1px solid var(--bd);border-left:3px solid var(--warn);color:inherit;text-decoration:none}
++.na:hover{background:var(--pri2)}.nt{font:500 16px/1.35 var(--fh)}.nm{color:var(--mut);font-size:13px}
++.nd{grid-column:2;grid-row:1/span 2;align-self:center;text-align:right;color:var(--warn);font-weight:600;font-size:13px;max-width:240px}
++.mo,.empty{color:var(--mut);margin:10px 0 0}.empty{text-align:center;padding:30px}
++/* Stage rail */
++#cs{display:flex;flex-wrap:wrap;gap:14px 28px}.gr h3{font:600 13px var(--fb);color:var(--mut);margin:0 0 6px}.gc{display:flex;flex-wrap:wrap;gap:6px}
++.pl{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:var(--r);font-size:13px;font-weight:500}
++.pl b{font:600 15px var(--fh)}.pl:hover{background:var(--pri2)}.pl.on{border-color:var(--pri);background:var(--pri2);box-shadow:inset 3px 0 var(--acc)}
++.pl em{font-style:normal;font-size:12px;font-weight:600;color:var(--warn)}.gr.cl .pl{color:var(--mut)}
++/* Filters */
++.fbar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}.fbar label{font-size:13px;font-weight:600;color:var(--mut)}
++.fbar select{width:min(360px,100%)}.fbar #fs{width:200px}.fbar .ck2{display:flex;align-items:center;gap:6px;color:var(--tx)}.vw{margin-left:auto}
++.chip{display:inline-block;background:var(--pri2);color:var(--lnk);border-radius:4px;padding:2px 10px;font:500 12px var(--fb);margin-left:6px;cursor:pointer}
++/* Docket */
++.dk{display:grid;grid-template-columns:auto 1fr minmax(240px,300px);gap:14px;padding:14px 4px 14px 12px;border-top:1px solid var(--bd);border-left:3px solid transparent}
++.dk.ko{border-left-color:var(--warn)}.dk.kt{border-left-color:var(--amb)}
++.dm h3{font:500 17px/1.35 var(--fh);margin:0 0 4px;max-width:70ch}.dm p{margin:2px 0;font-size:13.5px;color:var(--mut)}.dm .rk{color:var(--tx)}
++.ds{display:grid;gap:8px;align-content:start}.ds select{width:100%}
++.br{display:grid;grid-template-columns:92px 1fr 36px;gap:8px;align-items:center;font-size:12px;color:var(--mut)}.br b{text-align:right;color:var(--tx);font-weight:600}
++.br i{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,transparent calc(33.3% - 1px),var(--bd) 0 calc(33.3% + 1px),transparent 0 calc(66.6% - 1px),var(--bd) 0 calc(66.6% + 1px),transparent 0),var(--pri2)}
++.br i::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);border-radius:3px;background:var(--ok)}.br.l1 i::before{background:var(--amb)}.br.l2 i::before{background:var(--warn)}
++.ac{display:flex;gap:4px;justify-content:flex-end}
++/* Table */
++.tw{overflow-x:auto}.tw:has(#tb){max-height:calc(100vh - 250px);overflow:auto}
++table{border-collapse:collapse;width:100%;min-width:1180px}
++th{text-align:left;font:600 12px var(--fb);color:var(--mut);padding:8px;border-bottom:1px solid var(--bd);cursor:pointer;white-space:nowrap}
++.tw:has(#tb) th{position:sticky;top:0;z-index:3;background:var(--card)}
++td{padding:8px;font-size:14px;border-bottom:1px solid var(--bd);vertical-align:top}tbody tr:hover td{background:var(--pri2)}
++td select{padding:5px;font-size:13px;width:200px}.t{min-width:320px;max-width:520px}.t small{color:var(--mut);font-size:13px}
++td button,.ac button{background:none;border:0;color:var(--lnk);padding:4px 8px;font-size:13px}td button.d,.ac .d{color:var(--warn)}td a,.dm a{color:var(--lnk)}
++.ct{min-width:0}.ct th{cursor:default;text-align:center;position:sticky;top:0;background:var(--card)}.ct th:first-child,.ct td:first-child{text-align:left}
++.ct td{text-align:center;padding:6px 8px;font-size:13px}.ct td.z{color:var(--mut);opacity:.5}
++.gh td{background:var(--sec);font-weight:600;text-align:left!important;font-size:13px}.clk{cursor:pointer}.clk:hover td{background:var(--pri2)}
++/* Alerts */
++.pill{font:600 12px var(--fb);padding:3px 10px;border-radius:4px;background:var(--okbg);color:var(--ok);white-space:nowrap}
++.pill.o{background:var(--warnbg);color:var(--warn)}.pill.o::before{content:"\2691\00a0"}.pill.t{background:var(--ambbg);color:var(--amb)}.pill.n{background:var(--pri2);color:var(--tx)}
++.al{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;cursor:help}.al .at{font-size:11px;color:var(--mut)}
++.al .tip{display:none;position:absolute;right:0;top:100%;margin-top:4px;z-index:15;min-width:220px;max-width:min(300px,80vw);padding:8px 10px;border-radius:var(--r);background:var(--tx);color:var(--bg);font-size:12px;line-height:1.4;box-shadow:0 4px 14px #0004}
++.al .tip div+div{margin-top:4px}.al:hover .tip,.al:focus .tip,.al.open .tip{display:block}
++/* Drawers, dialog, toast */
++.dr{position:fixed;inset:0 0 0 auto;width:min(440px,100%);background:var(--bg);border-left:1px solid var(--bd);transform:translateX(100%);transition:transform .2s;z-index:20;padding:20px;overflow:auto;display:grid;gap:10px;align-content:start;box-shadow:-6px 0 20px #0003}.dr.on{transform:none}
++.dh{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-20px;margin:-20px -20px 0;padding:14px 20px;background:var(--bg);border-bottom:1px solid var(--bd);z-index:2}
++.dr label{font-size:13px;font-weight:600;color:var(--mut);display:block;margin-bottom:3px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
++.fs{font:600 16px var(--fh);margin:6px 0 0;padding-top:12px;border-top:1px solid var(--bd)}.dh+.fs{border:0;padding:0}
++.er{color:var(--warn);font-size:12px}
++.sb{position:sticky;bottom:-20px;margin:0 -20px -20px;padding:12px 20px;background:var(--bg);border-top:1px solid var(--bd);display:flex;gap:8px}
++.xb{background:none;border:0;font-size:20px;line-height:1;color:var(--mut);padding:4px 8px;border-radius:var(--r)}.xb:hover{background:var(--pri2);color:var(--tx)}
++dialog{border:1px solid var(--bd);border-radius:10px;padding:20px;background:var(--card);color:var(--tx);max-width:min(420px,92vw)}dialog::backdrop{background:#0006}.cfb{display:flex;gap:8px;justify-content:flex-end}
++.ts{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:var(--r);font-size:14px;transition:opacity .2s,transform .2s;z-index:50}
++.ts.on{opacity:1;transform:translate(-50%,0)}.ts.bad{background:var(--warn);color:#fff}
++/* Customize panel */
++.seg{display:flex;gap:6px}.seg button{flex:1;padding:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:var(--r);font-weight:600}.seg button.on{background:var(--pri);color:var(--btx);border-color:var(--pri)}
++.tg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tc{display:grid;gap:8px;text-align:left;padding:10px;border:2px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx)}.tc.on{border-color:var(--pri)}
++.tc b{font-size:14px;font-weight:600}.tc small{font-weight:400;font-size:12px;color:var(--mut)}.ck{font-style:normal;font-size:12px;font-weight:600;color:var(--lnk)}
++.sw{display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--bd)}.sw i{flex:1}
+ .pv{display:grid;gap:4px;padding:6px;border:1px solid;border-radius:6px}.pb{display:flex;justify-content:flex-end;padding:3px 5px;border-radius:4px}.pb i{width:24px;height:8px;border-radius:3px}.pc{height:12px;border:1px solid;border-left-width:3px;border-radius:3px}
+-@media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}.top input{width:100%}}
+-
+-/* ===== Redesign layer: institutional shell, type, tables ===== */
+-:root{--sbw:250px;--r:8px;--fh:Manrope,Inter,system-ui,sans-serif;--fb:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+-body{font-family:var(--fb);padding-left:var(--sbw);font-variant-numeric:tabular-nums}
+-body.sbc{--sbw:68px}
+-h1,h2,.kpi b,.side .brand b{font-family:var(--fh)}
+-.side{position:fixed;inset:0 auto 0 0;width:var(--sbw);background:linear-gradient(180deg,#5E1111,#3E0B0B);color:#F3E6E3;display:flex;flex-direction:column;z-index:30;transition:width .2s,transform .2s;border-right:2px solid #D4A017;overflow:hidden}
+-.side .brand{display:flex;gap:12px;align-items:center;padding:18px 14px;border-bottom:1px solid #ffffff22;min-height:84px}
+-.side .logo{width:42px;height:42px;border:2px solid #D4A017;flex:none}
+-.side .brand b{display:block;font-size:15px;font-weight:700;line-height:1.2;white-space:nowrap}.side .brand small{display:block;font-size:11px;opacity:.75;line-height:1.35;margin-top:2px;white-space:nowrap}
+-.side nav{display:grid;gap:4px;padding:14px 10px}
+-.side nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r);border-left:3px solid transparent;color:#F1DEDB;text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap}
+-.side nav a:hover{background:#ffffff14}.side nav a.on{background:#ffffff20;color:#fff;border-left-color:#D4A017}
+-.side svg{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+-.side .sc{margin:auto 10px 14px;padding:8px;background:none;border:1px solid #ffffff30;border-radius:var(--r);color:#F1DEDB}.side .sc:hover{background:#ffffff14}
+-body.sbc .side .tx{display:none}body.sbc .side .brand{justify-content:center}body.sbc .side nav a{justify-content:center}body.sbc .side .sc{transform:scaleX(-1)}
+-.top{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--bd);padding:12px 28px;gap:12px;box-shadow:0 1px 2px #0000000a}
+-.top h1{font-size:22px;font-weight:700;flex:1 1 220px}.top h1 small{font:400 12px/1.4 var(--fb);color:var(--mut);margin:0 0 2px}
+-.dt{font-size:13px;color:var(--mut);white-space:nowrap}.hb{display:none}
+-.pri,.ghost,.seg button,.tc{border-radius:var(--r);font-weight:600}.pri{box-shadow:0 1px 2px #0000002e}
+-.card{border-radius:10px;padding:20px;box-shadow:0 1px 2px #0000000d}.card h2{font-size:18px;font-weight:700}
+-main{padding:24px 28px;gap:20px}
+-.kpi{border-radius:10px;box-shadow:0 1px 2px #0000000d}.kpi b{font-weight:800}.kpi span{font-size:13px;font-weight:500}
+-th{font-size:12px;letter-spacing:.03em}td{font-size:14px}
+-.tw:has(#tb){max-height:calc(100vh - 250px);overflow:auto}.tw:has(#tb) th{position:sticky;top:0;z-index:3;background:var(--card);box-shadow:0 1px 0 var(--bd)}
+-.pill{border-radius:6px;font-weight:600;padding:3px 10px}
+-.welcome{padding:2px 2px 0}.welcome h2{font:800 24px/1.25 var(--fh);margin:0 0 4px}.welcome p{margin:0;color:var(--mut);max-width:70ch}
+-body.lock main,body.lock #q,body.lock .top .pri,body.lock .side{display:none}body.lock{padding-left:0}
+-@media(max-width:900px){body,body.sbc{padding-left:0}.side{transform:translateX(-100%);width:250px}body.sbo .side{transform:none}body.sbc .side .tx{display:initial}.side .sc{display:none}.hb{display:inline-block}.top{padding:10px 14px}.dt{display:none}main{padding:16px 14px}.top h1{font-size:18px}}
++@media(max-width:800px){.top{padding:10px 14px}.top nav{order:3;width:100%;overflow-x:auto}.top input{width:100%}.ph,main{padding-left:14px;padding-right:14px}.ph h1{font-size:24px}.dt{display:none}.kpi{flex-basis:45%}.dk{grid-template-columns:auto 1fr}.dk .ds{grid-column:1/-1}.vw{margin-left:0}}
+ @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+-/* Dense dashboard spacing (ui-ux-pro-max: density 8, 8-32px scale) */
+-main{padding:20px 24px;gap:16px}.card{padding:16px}.kpi{padding:12px 14px}.kpis{gap:10px}
+-td{padding:7px 8px}th{padding:8px}.side nav a{padding:9px 12px}
+-button,.side nav a{cursor:pointer}.side nav a{transition:background-color .2s,color .2s}
++@media print{@page{size:landscape;margin:12mm}.top,.ph,.kpis,.fbar,#cs,.dr,.ts,.ac,.dk>input,.dk .ds select,.leg{display:none!important}body{background:#fff}.card{border:0;padding:0}.dk{break-inside:avoid;grid-template-columns:1fr 240px}}
+diff --git a/theme.js b/theme.js
+index 6d187cb..577109a 100644
+--- a/theme.js
++++ b/theme.js
+@@ -17,7 +17,7 @@ mk("Chili Spice","Bold red, distinctive","F4E6E6","B94B4B","782C32","F8F5F5","FF
+ mk("Calm Blue","Soft blue, friendly and professional","E6F0F5","6F9DB8","3F6D89","F3F7F9","FFFFFF"),
+ mk("Harbor Haze","Muted teal, modern and fresh","E8EFF0","718E91","435F63","F4F7F7","FFFFFF"),
+ mk("Eucalyptus Grove","Soft green, serene and balanced","E6F0EB","6F9885","426D59","F3F7F4","FFFFFF")];
+-TH.push({n:"SB Mogpog",d:"Official maroon and gold",sw:["EFEAE5","D4A017","7A1414","F6F5F2","FFFFFF"],L:"EFEAE5 F1E9E7 F3EEEA D4A017 F6F5F2 FFFFFF 252525 6A6A6A E8E4DF 7A1414 FFFFFF 521010 7A1414 7A1414",D:"2A1717 3A2222 321C1C D4A017 1A1010 241616 F2ECEA B9A9A6 3D2A2A A33A3A FFFFFF B84A4A E8A0A0 D4A017"});
++TH.push({n:"SB Mogpog",d:"Official maroon and gold",sw:["EFEAE5","D4A017","7A1414","F6F5F2","FFFFFF"],L:"EFEAE5 F1E9E7 F3EEEA C8961A F5F6F8 FFFFFF 1D2230 5B6472 D9DDE3 7A1414 FFFFFF 521010 7A1414 7A1414",D:"2A1717 3A2222 321C1C D4A017 1A1010 241616 F2ECEA B9A9A6 3D2A2A A33A3A FFFFFF B84A4A E8A0A0 D4A017"});
+ const SEM={light:{ok:"#1a7f4b",okbg:"#e3f5ec",warn:"#b42318",warnbg:"#fde8e6",amb:"#8a5a00",ambbg:"#fff3d6",c2:"#e0a100",c3:"#1a7f4b"},dark:{ok:"#5cd18f",okbg:"#17382a",warn:"#ff8a80",warnbg:"#4a201d",amb:"#f0c060",ambbg:"#40330f",c2:"#f0c060",c3:"#5cd18f"}};
+ let S={t:TH.length-1,m:"auto"};try{S=Object.assign(S,JSON.parse(localStorage.getItem("sbtheme")||"{}"))}catch(e){}
+ S.t=Math.min(Math.max(+S.t||0,0),TH.length-1);
+-- 
+2.43.0
+
