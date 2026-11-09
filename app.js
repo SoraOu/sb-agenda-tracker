@@ -59,7 +59,7 @@ const isFinal=r=>FINAL.includes(r.status);
 const dp=r=>{if(!r.filed)return null;const end=isFinal(r)?(r.mayor||r.stageDate||today()):today();return Math.max(0,diff(r.filed,end))};
 // Days in Current Stage = separate monitoring metric (resets on every status change). Not used for alerts.
 const ds=r=>isFinal(r)?null:Math.max(0,diff(r.stageDate||r.filed||today(),today()));
-const AL={ok:"On Track",warn:"Approaching Deadline",od:"Overdue",done:"Completed",none:"No Received Date"};
+const AL={ok:"On Track",warn:"Approaching Deadline",od:"Overdue",done:"Completed",none:"No Received Date",na:"No Action Taken"};
 // Days Since Last Meeting = calendar days since the LATEST recorded meeting date. Independent of Days in Pipeline:
 // adding/editing a session only moves this counter; it never touches Days in Pipeline. No sessions recorded = not applicable.
 const lastSess=r=>(r.sessions||[]).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort().pop()||null;
@@ -69,13 +69,14 @@ const lvl=d=>d>30?2:d>15?1:0;
 const LN=[AL.ok,AL.warn,AL.od];
 // Combined alert: Overdue if EITHER counter >30; Approaching if neither is overdue but either is 16-30; On Track only if both 0-15.
 // Finalized statuses are excluded from active monitoring (Completed, no alert).
+// Agendas with a blank Meeting field (no valid session date) are "No Action Taken": no alert, Overdue never applies.
 function alx(r){if(isFinal(r))return{a:AL.done,why:[],tags:[]};
 const d=dp(r),s=dls(r);if(d===null&&s===null)return{a:AL.none,why:[],tags:[]};
+if(s===null)return{a:AL.na,why:["No meeting recorded, so no action has been taken yet. Overdue does not apply."],tags:[]};
 const C=[["Pipeline",d,d+" days since original receipt"],["Meeting",s,s+" days since the most recent meeting"]].filter(x=>x[1]!==null).map(x=>({n:x[0],l:lvl(x[1]),t:x[2]}));
 const m=Math.max(...C.map(x=>x.l)),hit=m>0?C.filter(x=>x.l==m):[],rest=C.filter(x=>!hit.includes(x));
 const why=[];if(hit.length)why.push(LN[m]+" \u2013 "+hit.map(x=>x.n).join(" and ")+": "+hit.map(x=>x.t).join(" and ")+".");
 rest.forEach(x=>why.push(LN[x.l]+" \u2013 "+x.n+": "+x.t+"."));
-if(s===null)why.push("No meeting date recorded yet, so only Pipeline is monitored.");
 return{a:LN[m],why,tags:hit.map(x=>x.n)}}
 const al=r=>alx(r).a;
 const alCls=a=>a==AL.od?"o":a==AL.warn?"t":a==AL.ok?"":"n";
@@ -90,7 +91,7 @@ function setF(t,v){F[t]=F[t]==v?"":v;render()}
 function setCm(v){F.cm=v;render()}
 function openCm(m){location.href="legislative.html?cm="+encodeURIComponent(m)}
 const alH=(X,a,cl,tip)=>`<span class="al" tabindex="0" role="button" aria-label="${esc(a+". "+tip)}" onclick="this.classList.toggle('open')" onkeydown="if(event.key=='Enter'||event.key==' '){event.preventDefault();this.classList.toggle('open')}" onblur="this.classList.remove('open')"><span class="pill ${cl}">${a}</span>${X.tags.length?`<small class="at">${X.tags.join(" + ")}</small>`:""}<span class="tip" role="tooltip">${X.why.length?X.why.map(w=>`<div>${esc(w)}</div>`).join(""):esc(a)}</span></span>`;
-const brh=(l,d)=>d===null?"":`<div class="br l${lvl(d)}" title="${l}: ${d} days"><span>${l}</span><i style="--w:${Math.min(100,Math.round(d/45*100))}%"></i><b>${d}d</b></div>`;
+const brh=(l,d,off)=>d===null?"":`<div class="br l${off?0:lvl(d)}" title="${l}: ${d} days"><span>${l}</span><i style="--w:${Math.min(100,Math.round(d/45*100))}%"></i><b>${d}d</b></div>`;
 function render(){persist();const base=HOME?data:data.filter(r=>sc()?isB(r):!isB(r)),c=f=>base.filter(f).length;
 $("kpis").innerHTML=[["Total Agenda Received",base.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (pipeline or meeting >30 days)",c(r=>al(r)==AL.od),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
 const CS=["Received","1st Reading (Session)","2nd Reading / Deliberated","Pending","Approved"];
@@ -124,7 +125,7 @@ return `<tr><td style="white-space:nowrap"><div style="display:flex;align-items:
 <td style="white-space:nowrap">${fmtDate(r.filed)||"–"}</td><td>${(r.sessions||[]).map(d=>`<div style="white-space:nowrap">${esc(fmtDate(d))}</div>`).join("")||"–"}</td><td style="white-space:nowrap">${esc(fmtDate(r.mayor))||"–"}</td><td>${rep(r)}</td><td>${dp(r)??"–"}</td><td>${dls(r)??"–"}</td><td>${alH(X,a,cl,tip)}</td>
 </tr>`}).join(""):`<tr><td colspan="13" class="empty">No measures found.</td></tr>`;
 $("dk").innerHTML=rows.length?rows.map(r=>{const X=alx(r),a=X.a,cl=alCls(a),tip=X.why.length?X.why.join(" "):a,ss=(r.sessions||[]).map(fmtDate).join(", ");
-return `<article class="dk ${cl?"k"+cl:""}"><input type="checkbox" aria-label="Select" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><div class="dm"><h3>${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</h3>${[["Committee",cms(r).map(x=>esc(x)).join("; ")],["From",esc(r.author)],["Type",esc(r.type)]].map(([k,v])=>`<p><span class="lb">${k}:</span> ${v||"–"}</p>`).join("")}<p><span class="lb">Received:</span> ${esc(fmtDate(r.filed))||"–"}${r.mayor?`<span class="gap"></span><span class="lb">Approved:</span> ${esc(fmtDate(r.mayor))}`:""}</p><p><span class="lb">Meetings:</span> ${esc(ss)||"–"}</p><p><span class="lb">Committee Report No.:</span> ${repI(r)||"–"}</p><p><span class="lb">Remarks:</span> <b>${esc(r.remarks)||"–"}</b></p></div><div class="ds"><select aria-label="Status" onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(x=>`<option ${x==r.status?"selected":""}>${esc(x)}</option>`).join("")}</select>${brh("In pipeline",dp(r))}${brh("Since meeting",dls(r))}${alH(X,a,cl,tip)}<div class="ac"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></div></article>`}).join(""):`<p class="empty">No agenda items match these filters.</p>`}
+return `<article class="dk ${cl?"k"+cl:""}"><input type="checkbox" aria-label="Select" ${sel.has(r.id)?"checked":""} onchange="selOne(${r.id},this.checked)"><div class="dm"><h3>${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</h3>${[["Committee",cms(r).map(x=>esc(x)).join("; ")],["From",esc(r.author)],["Type",esc(r.type)]].map(([k,v])=>`<p><span class="lb">${k}:</span> ${v||"–"}</p>`).join("")}<p><span class="lb">Received:</span> ${esc(fmtDate(r.filed))||"–"}${r.mayor?`<span class="gap"></span><span class="lb">Approved:</span> ${esc(fmtDate(r.mayor))}`:""}</p><p><span class="lb">Meetings:</span> ${esc(ss)||"–"}</p><p><span class="lb">Committee Report No.:</span> ${repI(r)||"–"}</p><p><span class="lb">Remarks:</span> <b>${esc(r.remarks)||"–"}</b></p></div><div class="ds"><select aria-label="Status" onchange="setStatus(${r.id},this.value)">${(r.status&&!ST.includes(r.status)?[r.status,...ST]:ST).map(x=>`<option ${x==r.status?"selected":""}>${esc(x)}</option>`).join("")}</select>${brh("In pipeline",dp(r),dls(r)===null)}${brh("Since meeting",dls(r))}${alH(X,a,cl,tip)}<div class="ac"><button onclick="openForm(${r.id})">Edit</button><button class="d" onclick="del(${r.id})">Delete</button></div></div></article>`}).join(""):`<p class="empty">No agenda items match these filters.</p>`}
 function setStatus(id,s){const r=data.find(x=>x.id==id);if(!r)return;const was=r.status;r.status=s;r.stageDate=today();
 if(APPR.includes(s)){if(!r.mayor)r.mayor=today()}else if(APPR.includes(was))r.mayor="";
 render();sync(r).then(ok=>{if(!ok)load()})}
