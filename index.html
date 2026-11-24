@@ -1,174 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Website Archive — Sangguniang Bayan of Mogpog</title>
-<style>
-:root{--mar:#7a1020;--mar2:#4e0a14;--gold:#c99a2e;--cream:#fbf5e8;--card:#fffdf8;--text:#2a1a1a;--muted:#715f5f;--line:#e6d9bd;--pale:#f6e6c4;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--mar:#b3263a;--mar2:#3a0810;--gold:#e0b44a;--cream:#1a1214;--card:#241a1c;--text:#f3e9e4;--muted:#b6a39c;--line:#3d2c2e;--pale:#3a2a22;color-scheme:dark}}
-:root[data-theme="dark"]{--mar:#b3263a;--mar2:#3a0810;--gold:#e0b44a;--cream:#1a1214;--card:#241a1c;--text:#f3e9e4;--muted:#b6a39c;--line:#3d2c2e;--pale:#3a2a22;color-scheme:dark}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-*{box-sizing:border-box}
-body{margin:0;background:var(--cream);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-h1,h2,h3,.serif{font-family:Georgia,"Times New Roman",serif}
-header.top{background:linear-gradient(180deg,var(--cream),var(--pale));border-bottom:4px solid var(--gold)}
-.brand{max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:14px}
-.seal{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle,var(--gold),var(--mar));border:3px solid var(--gold);display:grid;place-items:center;color:#fff;font:700 11px Georgia,serif;text-align:center;line-height:1.1;flex:none;position:relative;overflow:hidden}
-.seal img,.th img,.banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.seal img{background:var(--cream)}
-.banner img{opacity:.3}
-.brand h2{margin:0;color:var(--mar);font-size:20px;line-height:1.1;letter-spacing:.02em}
-.brand i{color:var(--muted);font-family:Georgia,serif;font-size:14px}
-nav{background:var(--mar);color:#fff}
-nav div{max-width:1100px;margin:0 auto;padding:0 8px;display:flex;overflow-x:auto}
-nav a{color:#fff;text-decoration:none;padding:12px 12px;white-space:nowrap;font-family:Georgia,serif;font-weight:600;font-size:14px}
-nav a.on{background:var(--mar2);border-bottom:3px solid var(--gold)}
-.banner{background:linear-gradient(90deg,var(--mar2),var(--mar));color:#fff;position:relative;overflow:hidden}
-.banner div{max-width:1100px;margin:0 auto;padding:22px 16px;position:relative}
-.banner h1{margin:0;font-size:clamp(28px,6vw,44px)}
-.banner p{margin:4px 0 0;font-style:italic;font-family:Georgia,serif;opacity:.9}
-.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 40px;display:grid;grid-template-columns:240px 1fr;gap:18px}
-@media(max-width:760px){.wrap{grid-template-columns:1fr}}
-aside details{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-aside summary{background:var(--mar);color:#fff;padding:12px 14px;font:600 17px Georgia,serif;cursor:pointer;list-style:none}
-aside .in{padding:12px 14px}
-aside label.c{display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer}
-aside h4{margin:12px 0 6px;font-family:Georgia,serif}
-aside h4:first-child{margin-top:0}
-input[type=checkbox]{accent-color:var(--mar);width:16px;height:16px}
-select,input[type=search]{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);width:100%}
-button{font:inherit;cursor:pointer}
-.btn{background:linear-gradient(var(--mar),var(--mar2));color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;width:100%;margin-top:12px}
-.btn.o{background:none;color:var(--mar);border:1px solid var(--mar);width:auto;margin:0;padding:6px 12px;font-size:13px}
-.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.tools .s{flex:1;min-width:200px}
-.tools .so{display:flex;gap:6px;align-items:center;font-size:14px}
-.tools .so select{width:auto}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-top:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;flex-direction:column}
-.th{height:120px;border-radius:6px;background:linear-gradient(180deg,var(--mar) 0 26%,var(--pale) 26%);display:flex;flex-direction:column;overflow:hidden;position:relative}
-.th b{color:#fff;font:600 10px Georgia,serif;padding:6px 8px;letter-spacing:.04em;text-transform:uppercase}
-.th span{flex:1;display:grid;place-items:center;text-align:center;padding:0 6px;color:var(--mar);font:800 17px/1.1 Georgia,serif;text-transform:uppercase}
-.th em{font-size:26px;display:block;font-style:normal}
-.card h3{font-size:15px;margin:10px 4px 4px;line-height:1.3}
-.card .d{color:var(--muted);font-size:13px;margin:0 4px 8px}
-.card .f{margin-top:auto;text-align:right}
-.pg{display:flex;gap:6px;justify-content:center;margin:20px 0 0}
-.pg button{min-width:36px;height:36px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:6px;font-weight:600}
-.pg button.on{background:var(--mar);color:#fff;border-color:var(--mar)}
-.info{margin-top:22px;border:1px solid var(--gold);background:var(--pale);border-radius:10px;padding:16px}
-.info h3{margin:0 0 6px;color:var(--mar)}
-.info ul{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2px 12px}
-.info li:before{content:"✓ ";color:var(--mar);font-weight:700}
-.info p{font-style:italic;font-family:Georgia,serif;color:var(--muted);margin:10px 0 0}
-.empty{padding:30px;text-align:center;color:var(--muted)}
-.det{max-width:800px;margin:0 auto;padding:18px 16px 40px}
-.det .th{height:170px}
-.det h1{color:var(--mar);font-size:28px;margin:16px 0 6px}
-.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0}
-.meta small{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-.tag{display:inline-block;background:var(--pale);border-radius:999px;padding:2px 10px;font-size:12px;margin:0 4px 4px 0}
-.rel a{display:block;color:var(--mar);padding:6px 0;border-bottom:1px solid var(--line);text-decoration:none}
-.bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
-footer{background:var(--mar2);color:#f3e6d0;text-align:center;padding:18px 16px;font-size:13px}
-[hidden]{display:none!important}
-@media print{header,nav,aside,.bar,footer{display:none}}
-</style>
-</head>
-<body>
-<header class="top"><div class="brand"><div class="seal">BAYAN<br>NG<br>MOGPOG<img src="assets/seal.png" alt="Official seal" onerror="this.remove()"></div><div><h2>SANGGUNIANG BAYAN<br>OF MOGPOG</h2><i>Vox Populi, Vox Dei</i></div></div></header>
-<nav><div><a href="#">Home</a><a href="#" class="on">Archive</a><a href="#">About SB</a><a href="#">Legislation</a><a href="#">Programs &amp; Projects</a><a href="#">News &amp; Announcements</a><a href="#">Contact Us</a></div></nav>
-
-<div id="list">
-<div class="banner"><img src="assets/banner.jpg" alt="" onerror="this.remove()"><div><h1>🗄️ Website Archive</h1><p>Access past announcements, resolutions, and official updates of the Sangguniang Bayan.</p></div></div>
-<div class="wrap">
-<aside><details id="fd" open><summary>▼ Filter by</summary><div class="in">
-<h4>Category</h4><div id="cats"></div>
-<h4>Year</h4><select id="yr"></select>
-<h4>Month</h4><select id="mo"></select>
-<button class="btn" id="apply">Apply filters</button>
-<button class="btn" id="reset" style="background:none;color:var(--mar);border:1px solid var(--mar);margin-top:8px">Reset</button>
-</div></details></aside>
-<section>
-<div class="tools"><input class="s" id="q" type="search" placeholder="Search by keyword, title or document number…"><label class="so">Sort by <select id="sort"><option value="n">Newest first</option><option value="o">Oldest first</option><option value="t">Title A–Z</option></select></label></div>
-<div class="grid" id="grid"></div>
-<div class="pg" id="pg"></div>
-<div class="info"><h3>What’s included in the archive?</h3><ul><li>News and announcements</li><li>Events and activities</li><li>Resolutions and ordinances</li><li>Programs and projects</li><li>Public notices</li><li>Other official releases</li></ul><p>The Sangguniang Bayan of Mogpog is committed to transparency and open government. Browse our archive to stay informed, even beyond the current updates.</p></div>
-</section></div></div>
-
-<div id="detail" class="det" hidden></div>
-<footer>Sangguniang Bayan of Mogpog, Marinduque · Records shown here are sample entries · Privacy notice</footer>
-
-<script>
-var CATS=["Announcements","Resolutions","Ordinances","Events","Programs & Projects","Public Notices","Others"];
-var ICON={"Announcements":"📣","Resolutions":"📜","Ordinances":"⚖️","Events":"🎉","Programs & Projects":"🛣️","Public Notices":"🏛️","Others":"📁"};
-var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-var R=[
-{id:"public-hearing-toda-route-2026",t:"Public Hearing: New TODA (Anapog-Sibucao Route)",c:"Public Notices",d:"2026-07-08",no:"",x:"Public hearing on the proposed TODA route from Brgy. Anapog-Sibucao to Mogpog Poblacion and vice versa.",tags:["TODA","Hearing"],rel:["ordinance-2026-015"]},
-{id:"ordinance-2026-015",t:"Ordinance No. 2026-015 (Barangay Events)",c:"Ordinances",d:"2026-06-20",no:"Ordinance No. 2026-015",x:"An ordinance regulating the conduct of barangay events and related permits within the municipality.",tags:["Barangay","Events"],rel:["public-hearing-toda-route-2026"]},
-{id:"resched-regular-session-aug-2026",t:"Re-sched. of Regular Session (August 2026)",c:"Announcements",d:"2026-08-01",no:"",x:"Notice of the rescheduled regular session for August 2026.",tags:["Session","Schedule"],rel:[]},
-{id:"road-improvement-program-2026",t:"Updated Project: Road Improvement Program",c:"Programs & Projects",d:"2026-05-15",no:"",x:"Progress update on the municipal road improvement program and its covered barangays.",tags:["Roads","Infrastructure"],rel:[]},
-{id:"resolution-2026-041",t:"Resolution No. 2026-041: Health Station Funding",c:"Resolutions",d:"2026-04-28",no:"Resolution No. 2026-041",x:"A resolution endorsing funding support for barangay health stations.",tags:["Health"],rel:[]},
-{id:"municipal-day-2026",t:"Municipal Day Celebration",c:"Events",d:"2026-03-12",no:"",x:"Highlights of the annual municipal day celebration and civic parade.",tags:["Celebration"],rel:[]},
-{id:"ordinance-2025-031",t:"Ordinance No. 2025-031: Solid Waste Management",c:"Ordinances",d:"2025-11-18",no:"Ordinance No. 2025-031",x:"Updated provisions on segregation and collection of solid waste.",tags:["Waste","Environment"],rel:[]},
-{id:"public-notice-budget-2026",t:"Public Notice: Annual Budget Hearing",c:"Public Notices",d:"2025-10-05",no:"",x:"Schedule and venue for the public hearing on the proposed annual budget.",tags:["Budget","Hearing"],rel:[]},
-{id:"resolution-2025-088",t:"Resolution No. 2025-088: Scholarship Program",c:"Resolutions",d:"2025-09-02",no:"Resolution No. 2025-088",x:"A resolution supporting the municipal scholarship program for qualified students.",tags:["Education"],rel:[]},
-{id:"clean-up-drive-2025",t:"Coastal Clean-up Drive",c:"Events",d:"2025-07-20",no:"",x:"Council participation in the coastal clean-up drive with partner barangays.",tags:["Environment"],rel:[]},
-{id:"official-statement-2025",t:"Official Statement on Typhoon Preparedness",c:"Others",d:"2025-06-11",no:"",x:"Statement of the council on disaster preparedness measures for the typhoon season.",tags:["Disaster"],rel:[]},
-{id:"livelihood-program-2025",t:"Livelihood Training Program",c:"Programs & Projects",d:"2025-03-03",no:"",x:"Skills and livelihood training sessions for qualified residents.",tags:["Livelihood"],rel:[]}
-];
-var ASSETS="assets/";
-function IMG(r){return r.img||ASSETS+r.id+".jpg"}
-var PER=4,S={cats:[],yr:"",mo:"",q:"",sort:"n",pg:1};
-function $(i){return document.getElementById(i)}
-function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
-function fd(s){var p=s.split("-");return MONTHS[+p[1]-1]+" "+(+p[2])+", "+p[0]}
-function thumb(r){return "<div class='th'><b>Sangguniang Bayan of Mogpog</b><span><div><em>"+ICON[r.c]+"</em>"+esc(r.no||r.c)+"</div></span><img src='"+IMG(r)+"' alt='"+esc(r.t)+"' loading='lazy' onerror='this.remove()'></div>"}
-var years=[];R.forEach(function(r){var y=r.d.slice(0,4);if(years.indexOf(y)<0)years.push(y)});years.sort().reverse();
-$("cats").innerHTML=CATS.map(function(c){return "<label class='c'><input type='checkbox' value=\""+esc(c)+"\"> "+esc(c)+"</label>"}).join("");
-$("yr").innerHTML="<option value=''>Select Year</option>"+years.map(function(y){return "<option>"+y+"</option>"}).join("");
-$("mo").innerHTML="<option value=''>Select Month</option>"+MONTHS.map(function(m,i){return "<option value='"+(i+1)+"'>"+m+"</option>"}).join("");
-function filtered(){
-  var q=S.q.toLowerCase(),a=R.filter(function(r){
-    if(S.cats.length&&S.cats.indexOf(r.c)<0)return false;
-    if(S.yr&&r.d.slice(0,4)!==S.yr)return false;
-    if(S.mo&&+r.d.slice(5,7)!==+S.mo)return false;
-    if(q&&(r.t+" "+r.no+" "+r.x+" "+r.tags.join(" ")).toLowerCase().indexOf(q)<0)return false;
-    return true});
-  a.sort(function(x,y){return S.sort==="t"?x.t.localeCompare(y.t):S.sort==="o"?x.d.localeCompare(y.d):y.d.localeCompare(x.d)});
-  return a}
-function render(){
-  var a=filtered(),pages=Math.max(1,Math.ceil(a.length/PER));if(S.pg>pages)S.pg=pages;
-  var v=a.slice((S.pg-1)*PER,S.pg*PER);
-  $("grid").innerHTML=v.map(function(r){return "<div class='card'>"+thumb(r)+"<h3>"+esc(r.t)+"</h3><p class='d'>📅 "+fd(r.d)+"</p><div class='f'><a class='btn o' href='#"+r.id+"' style='text-decoration:none;display:inline-block'>View Archive →</a></div></div>"}).join("")||"<div class='empty' style='grid-column:1/-1'>No records match your filters.</div>";
-  var h="";for(var i=1;i<=pages;i++)h+="<button data-p='"+i+"'"+(i===S.pg?" class='on'":"")+">"+i+"</button>";
-  if(S.pg<pages)h+="<button data-p='"+(S.pg+1)+"' aria-label='Next'>›</button>";
-  $("pg").innerHTML=pages>1?h:""}
-function apply(){
-  S.cats=[].slice.call(document.querySelectorAll("#cats input:checked")).map(function(e){return e.value});
-  S.yr=$("yr").value;S.mo=$("mo").value;S.pg=1;render();
-  if(window.innerWidth<=760)$("fd").open=false}
-$("apply").onclick=apply;
-$("reset").onclick=function(){document.querySelectorAll("#cats input").forEach(function(e){e.checked=false});$("yr").value="";$("mo").value="";$("q").value="";S.q="";S.cats=[];S.yr="";S.mo="";S.pg=1;render()};
-$("q").oninput=function(){S.q=this.value;S.pg=1;render()};
-$("sort").onchange=function(){S.sort=this.value;S.pg=1;render()};
-$("pg").onclick=function(e){var p=e.target.getAttribute("data-p");if(p){S.pg=+p;render();window.scrollTo(0,0)}};
-if(window.innerWidth<=760)$("fd").open=false;
-
-function show(){
-  var id=location.hash.slice(1),r=R.filter(function(x){return x.id===id})[0];
-  if(!r){$("list").hidden=false;$("detail").hidden=true;return}
-  $("list").hidden=true;$("detail").hidden=false;window.scrollTo(0,0);
-  $("detail").innerHTML="<a class='btn o' href='#' style='text-decoration:none;display:inline-block'>← Return to archive</a><div style='height:12px'></div>"+thumb(r)
-   +"<h1>"+esc(r.t)+"</h1><div class='meta'><div><small>Category</small>"+esc(r.c)+"</div><div><small>Date published</small>"+fd(r.d)+"</div>"+(r.no?"<div><small>Document number</small>"+esc(r.no)+"</div>":"")+"<div><small>Status</small>Published</div></div>"
-   +"<p>"+esc(r.x)+"</p><div>"+r.tags.map(function(t){return "<span class='tag'>"+esc(t)+"</span>"}).join("")+"</div>"
-   +"<div class='bar'><button class='btn o' id='cp'>🔗 Copy link</button><button class='btn o' onclick='window.print()'>⬇ Save / print record</button></div>"
-   +(r.rel.length?"<h3>Related records</h3><div class='rel'>"+r.rel.map(function(i){var o=R.filter(function(x){return x.id===i})[0];return o?"<a href='#"+o.id+"'>"+esc(o.t)+"</a>":""}).join("")+"</div>":"");
-  $("cp").onclick=function(){var b=this,u=location.href;try{navigator.clipboard.writeText(u).then(function(){b.textContent="✓ Copied"})}catch(e){b.textContent="Copy from address bar"}};
-  document.title=r.t+" — SB Mogpog Archive"}
-window.addEventListener("hashchange",show);
-render();show();
-</script>
-</body>
-</html>
+<title>Sangguniang Bayan Agenda Tracker</title>
+<link rel="stylesheet" href="styles.css">
+<script>if(location.hash=="#register")location.replace("legislative.html");else if(location.hash=="#barangay")location.replace("barangay.html");</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script><script src="config.js"></script><script src="theme.js"></script></head>
+<body data-page="home">
+<script src="shell.js"></script>
+<main>
+<div class="kpis" id="kpis"></div>
+<div class="pg on two">
+<div class="card"><h2>Committee Workload</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Committee</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="cc"></tbody></table></div></div>
+<div class="card"><h2>Types of Documents</h2><div class="tw" style="max-height:620px;overflow:auto"><table class="ct"><thead><tr><th>Type of Document</th><th>Total</th><th>Received</th><th>1st Reading</th><th>2nd Reading</th><th>Pending</th><th>Approved</th></tr></thead><tbody id="tyb"></tbody></table></div></div>
+</div>
+<section class="card"><h2>Needs attention <span id="nc"></span></h2><div id="na"></div></section>
+</main>
+<script src="app.js"></script>
+</body></html>
