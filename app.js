@@ -6,10 +6,11 @@ document.body.insertAdjacentHTML("beforeend",`<div class="dr" id="dr">
 <div><label>Type of document</label><select id="fy"></select></div>
 <div><label id="lfa">From</label><input id="fa"></div>
 <div><label>Status</label><select id="fst"></select></div>
+<div><label for="ffl">File link</label><input id="ffl" type="url" placeholder="https://… (Drive, OneDrive, etc.)"></div>
 <h3 class="fs">Routing</h3><div><label>Committee(s)</label><div id="cl" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addCom()" style="margin-top:6px">+ Add committee</button></div>
-<h3 class="fs">Dates</h3><div class="g2"><div><label>Date received</label><input type="date" id="fd"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
+<h3 class="fs">Dates</h3><div class="g2"><div><label>Date received</label><input type="date" id="fd"><label for="ftr" style="margin-top:8px">Time received</label><input type="time" id="ftr"></div><div><label>Approval date</label><input type="date" id="fm"></div></div>
 <div><label>Meeting Dates</label><div id="ss" style="display:grid;gap:6px"></div><button type="button" class="ghost" onclick="addSess()" style="margin-top:6px">+ Add meeting date</button></div>
-<h3 class="fs">Committee report</h3><div class="g2"><div><label>Committee report no.</label><input id="fr" placeholder="CR-2026-04"></div><div><label>Committee report link</label><input id="fl" type="url" placeholder="https://… (Drive, OneDrive, etc.)"></div></div>
+<h3 class="fs">Committee report</h3><div id="rl" style="display:grid;gap:8px"></div><button type="button" class="ghost" onclick="addRep()" style="margin-top:6px">+ Add Comm. Report</button>
 <div id="fup"><label>Committee report file</label><input type="file" id="ff" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"><div id="fcur" style="font-size:12px;color:var(--mut);margin-top:4px"></div></div>
 <h3 class="fs">Notes</h3><div><label>Remarks / next steps</label><textarea id="fk" rows="3"></textarea></div>
 <div class="sb"><button class="pri" onclick="save()">Save</button><button class="ghost" onclick="closeForm()">Cancel</button></div>
@@ -47,7 +48,7 @@ const today=()=>iso(new Date());
 const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const fmtDate=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||"");return m?MO[+m[2]-1]+"-"+(+m[3])+"-"+m[1]:(v||"")};
 const diff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
-let sel=new Set(),curRows=[],AS=null,sess=[],coms=[],col=null,local=true,data=[],editId=null,F={st:"",cm:"",od:new URLSearchParams(location.search).get("od")=="1"},sort={k:"filed",d:-1};
+let sel=new Set(),curRows=[],AS=null,sess=[],coms=[],reps=[],col=null,local=true,data=[],editId=null,F={st:"",cm:"",od:new URLSearchParams(location.search).get("od")=="1"},sort={k:"filed",d:-1};
 if(!HOME){const c0=new URLSearchParams(location.search).get("cm");if(c0)F.cm=c0}
 try{data=JSON.parse(localStorage.getItem("sbtracker")||"[]");data.forEach(norm)}catch(e){}
 const persist=()=>{if(local)try{localStorage.setItem("sbtracker",JSON.stringify(data))}catch(e){}};
@@ -144,10 +145,10 @@ SB.from("measures").delete().eq("id",id).select().then(async({data:d,error})=>{
 if(error||!d||!d.length){werr(error||{message:"Delete was not permitted."});load();return}
 if(r.reportFile)await SB.storage.from("reports").remove([r.reportFile.id]);
 await wipeFiles(id)})}
-const M={ft:"title",fy:"type",fa:"author",fst:"status",fd:"filed",fr:"report",fl:"reportLink",fm:"mayor",fk:"remarks"};
+const M={ft:"title",fy:"type",fa:"author",fst:"status",fd:"filed",ftr:"timeReceived",ffl:"fileLink",fm:"mayor",fk:"remarks"};
 function fillTypes(bg){$("fy").innerHTML=TYG.map(g=>`<optgroup label="${esc(g[0])}">${g[1].map(x=>`<option>${esc(x)}</option>`).join("")}</optgroup>`).join("")}
 function openForm(id){editId=id||null;const r=id?data.find(x=>x.id==id):{filed:today(),type:sc()?BT[0]:TY[0],status:ST[0],committee:CM[0]};if(id&&!r)return;
-fillTypes();$("fte").hidden=true;$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on");$("dr").scrollTop=0}
+fillTypes();$("fte").hidden=true;$("mt").textContent=id?"Edit agenda":"Add agenda";if(r.type&&![...$("fy").options].some(o=>o.value==r.type))$("fy").add(new Option(r.type));if(r.status&&![...$("fst").options].some(o=>o.value==r.status))$("fst").add(new Option(r.status));for(const k in M)$(k).value=r[M[k]]||"";sess=(r.sessions||[]).slice();drawSess();coms=cms(r).length?cms(r).slice():[CM[0]];drawCom();reps=repList(r).map(x=>({no:x.no,link:x.link}));if(!reps.length)reps=[{no:"",link:""}];drawRep();$("fup").hidden=!AS;$("ff").value="";$("fcur").textContent=r.reportFile?"Current file: "+r.reportFile.name:"";$("dr").classList.add("on");$("dr").scrollTop=0}
 function closeForm(){$("dr").classList.remove("on")}
 let saving=false;
 async function save(){if(saving)return;if(!$("ft").value.trim()){$("fte").hidden=false;$("ft").focus();return}
@@ -157,6 +158,7 @@ if(!r){alert("This item no longer exists.");closeForm();return}
 const old=r.status,prev=r.reportFile;let up=null;
 for(const k in M)r[M[k]]=$(k).value.trim();
 r.sessions=sess.filter(Boolean).sort();r.committees=[...new Set(coms)];r.committee=r.committees.join("; ");delete r.target;
+r.reports=reps.map(x=>({no:(x.no||"").trim(),link:(x.link||"").trim()})).filter(x=>x.no||x.link);r.report=r.reports.length?r.reports[0].no:"";r.reportLink=r.reports.length?r.reports[0].link:"";
 const fl=$("ff").files[0];
 if(fl&&AS){try{const u=await AS.upload(fl,r.id);up={id:u.id,name:fl.name};r.reportFile=up}catch(e){alert("File upload failed: "+((e&&e.message)||"not permitted"))}}
 if(old!==r.status)r.stageDate=today();
@@ -167,15 +169,19 @@ else{if(up&&SB)SB.storage.from("reports").remove([up.id]);load()}
 }finally{saving=false}}
 function drawCom(){$("cl").innerHTML=coms.map((c,i)=>`<div style="display:flex;gap:6px"><select onchange="coms[${i}]=this.value">${(CM.includes(c)?CM:[c,...CM]).map(m=>`<option ${m==c?"selected":""}>${esc(m)}</option>`).join("")}</select>${coms.length>1?`<button type="button" class="ghost" onclick="coms.splice(${i},1);drawCom()">✕</button>`:""}</div>`).join("")}
 function addCom(){const n=CM.find(m=>!coms.includes(m));if(n){coms.push(n);drawCom()}}
-function rep(r){const a=[];if(r.report)a.push(esc(r.report));if(r.reportLink&&/^https?:\/\//i.test(r.reportLink))a.push(`<a href="${esc(r.reportLink)}" target="_blank" rel="noopener">Link</a>`);if(r.reportFile)a.push(`<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>`);return a.join("<br>")||"–"}
-function repI(r){const a=[];if(r.report)a.push(esc(r.report));if(r.reportLink&&/^https?:\/\//i.test(r.reportLink))a.push(`(<a href="${esc(r.reportLink)}" target="_blank" rel="noopener">link</a>)`);if(r.reportFile)a.push(`(<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>)`);return a.join(" ")}
+function repList(r){return r.reports&&r.reports.length?r.reports:(r.report||r.reportLink?[{no:r.report||"",link:r.reportLink||""}]:[])}
+function repLine(x,w){const l=x.link&&/^https?:\/\//i.test(x.link)?`<a href="${esc(x.link)}" target="_blank" rel="noopener">${w?"link":"Link"}</a>`:"";return x.no?esc(x.no)+(l?" ("+l+")":""):l}
+function rep(r){const a=repList(r).map(x=>repLine(x)).filter(Boolean);if(r.reportFile)a.push(`<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>`);return a.join("<br>")||"–"}
+function repI(r){const a=repList(r).map(x=>repLine(x,1)).filter(Boolean);if(r.reportFile)a.push(`(<a href="#" onclick="openFile('${esc(r.reportFile.id)}');return false">${esc(r.reportFile.name)}</a>)`);return a.join(", ")}
+function drawRep(){$("rl").innerHTML=reps.map((x,i)=>`<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:end"><div><label>Committee report no.</label><input value="${esc(x.no)}" placeholder="CR-2026-04" oninput="reps[${i}].no=this.value"></div><div><label>Link</label><input type="url" value="${esc(x.link)}" placeholder="https://…" oninput="reps[${i}].link=this.value"></div><button type="button" class="ghost" onclick="reps.splice(${i},1);drawRep()" aria-label="Remove committee report">✕</button></div>`).join("")||'<small style="color:var(--mut)">No committee reports yet</small>'}
+function addRep(){reps.push({no:"",link:""});drawRep()}
 function drawSess(){$("ss").innerHTML=sess.map((d,i)=>`<div style="display:flex;gap:6px"><input type="date" value="${esc(d)}" onchange="sess[${i}]=this.value"><button type="button" class="ghost" onclick="sess.splice(${i},1);drawSess()">✕</button></div>`).join("")||'<small style="color:var(--mut)">No meeting dates yet</small>'}
 function addSess(){sess.push(today());drawSess()}
 function werr(e){toast("Could not save: "+((e&&e.message)||"you do not have permission to edit."),1)}
 const CFG=typeof SB_CONFIG!=="undefined"?SB_CONFIG:null;
 const SB=CFG&&CFG.url&&CFG.key&&!/YOUR-/.test(CFG.url+CFG.key)&&typeof supabase!=="undefined"?supabase.createClient(CFG.url,CFG.key):null;
-const toRow=r=>({id:r.id,no:r.no||"",title:r.title,type:r.type||"",author:r.author||"",status:r.status,committee:r.committee||"",filed:r.filed||null,stage_date:r.stageDate||null,mayor:r.mayor||null,report:r.report||null,report_link:r.reportLink||null,report_file:r.reportFile||null,remarks:r.remarks||null,sessions:r.sessions||[],updated_at:new Date().toISOString()});
-const fromRow=x=>norm({id:x.id,no:x.no,title:x.title,type:x.type,author:x.author,status:x.status,committee:x.committee,filed:x.filed||"",stageDate:x.stage_date||"",mayor:x.mayor||"",report:x.report||"",reportLink:x.report_link||"",reportFile:x.report_file,remarks:x.remarks||"",sessions:x.sessions||[]});
+const toRow=r=>({id:r.id,no:r.no||"",title:r.title,type:r.type||"",author:r.author||"",status:r.status,committee:r.committee||"",filed:r.filed||null,stage_date:r.stageDate||null,mayor:r.mayor||null,report:r.report||null,report_link:r.reportLink||null,reports:r.reports||[],file_link:r.fileLink||null,time_received:r.timeReceived||null,report_file:r.reportFile||null,remarks:r.remarks||null,sessions:r.sessions||[],updated_at:new Date().toISOString()});
+const fromRow=x=>norm({id:x.id,no:x.no,title:x.title,type:x.type,author:x.author,status:x.status,committee:x.committee,filed:x.filed||"",stageDate:x.stage_date||"",mayor:x.mayor||"",report:x.report||"",reportLink:x.report_link||"",reports:x.reports||[],fileLink:x.file_link||"",timeReceived:(x.time_received||"").slice(0,5),reportFile:x.report_file,remarks:x.remarks||"",sessions:x.sessions||[]});
 function sync(r){if(!col)return Promise.resolve(true);return SB.from("measures").upsert(toRow(r)).then(({error})=>{if(error){werr(error);return false}return true})}
 async function load(){const{data:d,error}=await SB.from("measures").select("*");if(error){werr(error);return}data=d.map(fromRow);render()}
 async function openFile(p){const{data:d,error}=await SB.storage.from("reports").createSignedUrl(p,300);if(error)return werr(error);window.open(d.signedUrl,"_blank","noopener")}
