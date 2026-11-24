@@ -37,9 +37,3 @@ drop policy if exists "staff files" on storage.objects;
 create policy "staff files" on storage.objects
   for all to authenticated
   using (bucket_id = 'reports') with check (bucket_id = 'reports');
-
--- Add-agenda form update: file link, time received, multiple committee reports.
--- Safe to re-run. Run this before deploying the updated app.js.
-alter table public.measures add column if not exists file_link text;
-alter table public.measures add column if not exists time_received time;
-alter table public.measures add column if not exists reports jsonb default '[]';  -- [{"no": "CR-2026-04", "link": "https://..."}]
