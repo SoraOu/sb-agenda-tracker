@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Municipal Ordinances – Sangguniang Bayan Agenda Tracker</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script><script src="config.js"></script><script src="theme.js"></script></head>
+<body data-page="municipal">
+<script src="shell.js"></script>
+<main>
+<div class="kpis" id="kpis"></div>
+<div class="pg on">
+<div class="card"><h2><span id="pt">Municipal Ordinances – Pipeline by Stage</span> <a onclick="setF('st','')">Clear filter</a></h2><div id="cs"></div><div class="leg"><span>Red tag = overdue (more than 30 days in pipeline OR since the last meeting). Agendas with no meeting recorded are “No Action Taken” and are never overdue. Hover or click an alert for the reason.</span></div></div>
+<div class="fbar"><label for="fcm">Committee</label><select id="fcm" onchange="setCm(this.value)"></select><label class="ck2"><input type="checkbox" id="fod" onchange="F.od=this.checked;render()">Overdue only</label><div class="seg vw"><button type="button" id="vd" onclick="setV('docket')">Docket</button><button type="button" id="vt" onclick="setV('table')">Table</button></div></div>
+<div class="card"><h2><span><span id="rt">Municipal Ordinances Register</span> <span id="chips"></span></span><span style="display:flex;gap:12px;align-items:center"><button class="ghost" id="bd" hidden onclick="delSel()" style="padding:6px 12px;color:var(--warn);border-color:var(--warn)">Delete selected</button><span style="font-weight:400;font-size:13px;color:var(--mut)" id="cnt"></span></span></h2>
+<div class="tw" id="tbw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div><div id="dk" class="dkl"></div></div>
+</div>
+</main>
+<script src="app.js"></script>
+<script src="similarity.js"></script>
+</body></html>

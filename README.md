@@ -4,14 +4,18 @@ Static web app (vanilla HTML/JS) with a Supabase backend (Postgres + Auth + Stor
 
 ## Files
 **Pages** (one per window; the nav bar links between them)
-- `index.html` – Home (committee workload + types of documents)
+- `index.html` – About SB / Home (committee workload + types of documents)
 - `legislative.html` – Legislative Documents register
 - `barangay.html` – Barangay Documents register
+- `municipal.html` – Municipal Ordinances register
+- `signed.html` – Signed Resolutions register (approved resolutions)
 
 **Shared code** (loaded by every page, so a fix is made once)
 - `styles.css` – all styling
 - `theme.js` – colour themes and light/dark mode
-- `shell.js` – page header and navigation bar
+- `similarity.js` – similar-document detection (75%+ match) on every register; classification choices, reference numbers, Audit Trail. Load after `app.js`
+- `shell.js` – masthead, maroon navigation bar, Filter by sidebar and search row
+- `masthead.jpg` – masthead image (seal, title and members)
 - `app.js` – data, Supabase sync, alerts, tables, Add/Edit form, sign-in
 - `logo.jpg` – the Sangguniang Bayan seal
 
@@ -36,3 +40,9 @@ Static web app (vanilla HTML/JS) with a Supabase backend (Postgres + Auth + Stor
 ## Adding a new page
 Copy `legislative.html`, change `data-page` and the `<title>`, then add a line to the `NAV` list in `shell.js`.
 Old bookmarks such as `/#register` and `/#barangay` are redirected to the new pages by `index.html`.
+
+## Similar-document detection
+
+When a new agenda is saved and an existing document in any register is 75% or more similar (or has the same sender, type, number and year), a "Similar Documents Detected" pop-up lists the matches and asks how to classify the new document (new, revised version, resubmission, supplemental/related, or manual verification). Decisions get a reference number (`SB-YYYY-NNNN`), link to the original document, and appear under **Audit Trail** in the nav bar.
+
+With Supabase, run `supabase/similarity.sql` once so the history can be stored.

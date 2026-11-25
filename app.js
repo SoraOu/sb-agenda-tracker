@@ -37,6 +37,8 @@ const TYG=[["1. Legislative Documents",["Proposed Ordinance","Proposed Resolutio
 const TY=TYG.flatMap(g=>g[1]);
 const BT=TYG.find(g=>/^4\./.test(g[0]))[1],isB=r=>BT.includes(r.type),sc=()=>PAGE=="barangay";
 const FINAL=["Received. No Follow-Up Needed","Approved","Disapproved","Repealed","Implemented / Released","Completed / Filed","Tabled"],APPR=["Approved","Implemented / Released"];
+// Which documents each register page lists.
+const inPage=r=>PAGE=="barangay"?isB(r):PAGE=="municipal"?(/Ordinance/.test(r.type)&&!isB(r)):PAGE=="signed"?(APPR.includes(r.status)&&/Resolution/.test(r.type)):!isB(r);
 const LEG={"1st Read (Session)":"1st Reading (Session)","2nd Read (Session)":"2nd Reading / Deliberated","2nd Read / Deliberated":"2nd Reading / Deliberated","Deliberated":"2nd Reading / Deliberated","Pending / For Revision":"Pending","Revised":"For Revision","Pending Approval":"For Approval","Implemented":"Implemented / Released","Released":"Implemented / Released","Table Out":"Tabled","Deferred / Tabled / Suspended":"Deferred","Filed / First Reading":"Received","Referred to Committee":"Pending","Under Committee Review":"Pending","Committee Report Ready":"For Approval","Second Reading / Debate":"2nd Reading / Deliberated","Third & Final Reading":"2nd Reading / Deliberated","Transmitted to Mayor":"For Approval","Approved / Enacted":"Approved","Vetoed / Deferred":"Deferred"};
 const norm=r=>{if(LEG[r.status])r.status=LEG[r.status];return r};
 const cms=r=>r.committees&&r.committees.length?r.committees:(r.committee?String(r.committee).split(/\s*;\s*/).filter(Boolean):[]);
@@ -49,7 +51,7 @@ const MO=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec
 const fmtDate=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||"");return m?MO[+m[2]-1]+"-"+(+m[3])+"-"+m[1]:(v||"")};
 const diff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
 let sel=new Set(),curRows=[],AS=null,sess=[],coms=[],reps=[],col=null,local=true,data=[],editId=null,F={st:"",cm:"",od:new URLSearchParams(location.search).get("od")=="1"},sort={k:"filed",d:-1};
-if(!HOME){const c0=new URLSearchParams(location.search).get("cm");if(c0)F.cm=c0}
+
 try{data=JSON.parse(localStorage.getItem("sbtracker")||"[]");data.forEach(norm)}catch(e){}
 const persist=()=>{if(local)try{localStorage.setItem("sbtracker",JSON.stringify(data))}catch(e){}};
 const opt=(s,a)=>s.innerHTML=a.map(x=>`<option>${esc(x)}</option>`).join("");
@@ -93,7 +95,7 @@ function setCm(v){F.cm=v;render()}
 function openCm(m){location.href="legislative.html?cm="+encodeURIComponent(m)}
 const alH=(X,a,cl,tip)=>`<span class="al" tabindex="0" role="button" aria-label="${esc(a+". "+tip)}" onclick="this.classList.toggle('open')" onkeydown="if(event.key=='Enter'||event.key==' '){event.preventDefault();this.classList.toggle('open')}" onblur="this.classList.remove('open')"><span class="pill ${cl}">${a}</span>${X.tags.length?`<small class="at">${X.tags.join(" + ")}</small>`:""}<span class="tip" role="tooltip">${X.why.length?X.why.map(w=>`<div>${esc(w)}</div>`).join(""):esc(a)}</span></span>`;
 const brh=(l,d,off)=>d===null?"":`<div class="br l${off?0:lvl(d)}" title="${l}: ${d} days"><span>${l}</span><i style="--w:${Math.min(100,Math.round(d/45*100))}%"></i><b>${d}d</b></div>`;
-function render(){persist();const base=HOME?data:data.filter(r=>sc()?isB(r):!isB(r)),c=f=>base.filter(f).length;
+function render(){persist();syncSB();const base=HOME?data:data.filter(r=>inPage(r)),c=f=>base.filter(f).length;
 $("kpis").innerHTML=[["Total Agenda Received",base.length],["Received",c(r=>r.status=="Received")],["1st Reading",c(r=>r.status=="1st Reading (Session)")],["2nd Reading",c(r=>r.status=="2nd Reading / Deliberated")],["Pending",c(r=>r.status=="Pending")],["Approved",c(r=>r.status=="Approved")],["Overdue (pipeline or meeting >30 days)",c(r=>al(r)==AL.od),"w"]].map(k=>`<div class="kpi ${k[2]||""}"><b>${k[1]}</b><span>${k[0]}</span></div>`).join("");
 const CS=["Received","1st Reading (Session)","2nd Reading / Deliberated","Pending","Approved"];
 const CMS=[...CM,...[...new Set(data.flatMap(r=>cms(r)))].filter(m=>!CM.includes(m))];
@@ -106,7 +108,7 @@ const hot=data.map(r=>({r,w:al(r)==AL.od?Math.max(dp(r)??0,dls(r)??0):-1})).filt
 $("nc").textContent=hot.length+" overdue";
 $("na").innerHTML=hot.length?hot.slice(0,8).map(({r})=>{const w=alx(r).why[0]||"";return `<a class="na" href="${isB(r)?"barangay":"legislative"}.html?od=1"><span class="nt">${r.no?`<b>${esc(r.no)}</b> `:""}${esc(r.title)}</span><span class="nm">${esc(r.status)}, ${esc(cms(r)[0]||"No committee")}</span><span class="nd">${esc(w.replace(/^Overdue \u2013 /,""))}</span></a>`}).join("")+(hot.length>8?`<p class="mo">${hot.length-8} more overdue. Open a register and use Overdue only.</p>`:""):`<p class="empty">No overdue agenda. Everything is on track or finished.</p>`;
 return}
-const dS=data.filter(r=>sc()?isB(r):!isB(r)),dd=dS.filter(r=>!F.cm||cms(r).includes(F.cm)),cd=f=>dd.filter(f).length;
+const dS=data.filter(r=>inPage(r)),dd=dS.filter(r=>!F.cm||cms(r).includes(F.cm)),cd=f=>dd.filter(f).length;
 const od=s=>cd(r=>r.status==s&&al(r)==AL.od);
 const GR=[["Intake",["Received","For Follow-Up"]],["Session",["1st Reading (Session)","2nd Reading / Deliberated"]],["Committee",["Pending","For Revision","For Approval"]],["On hold",["Deferred","Suspended"]]];GR.push(["Closed",ST.filter(s=>!GR.some(g=>g[1].includes(s)))]);
 const chip=s=>{const n=cd(r=>r.status==s),o=od(s);return `<button type="button" class="pl ${F.st==s?"on":""}" aria-pressed="${F.st==s}" onclick='setF("st",${jq(s)})'><span>${esc(s)}</span><b>${n}</b>${o?`<em title="${o} overdue">\u2691 ${o}</em>`:""}</button>`};
@@ -114,7 +116,7 @@ $("cs").innerHTML=GR.map(g=>`<div class="gr${g[0]=="Closed"?" cl":""}"><h3>${g[0
 $("fcm").innerHTML='<option value="">All committees</option>'+CMS.map(m=>`<option ${m==F.cm?"selected":""}>${esc(m)}</option>`).join("");
 $("fod").checked=F.od;$("tbw").hidden=VW=="docket";$("dk").hidden=VW!="docket";$("vd").classList.toggle("on",VW=="docket");$("vt").classList.toggle("on",VW!="docket");
 const q=$("q").value.toLowerCase();
-const rows=dS.filter(r=>(!F.st||r.status==F.st)&&(!F.cm||cms(r).includes(F.cm))&&(!F.od||al(r)==AL.od)&&(!q||((r.no||"")+" "+(r.title||"")+" "+(r.author||"")).toLowerCase().includes(q)))
+const rows=dS.filter(r=>(!CATF.length||CATF.includes(catOf(r)))&&(!F.st||r.status==F.st)&&(!F.cm||cms(r).includes(F.cm))&&(!F.od||al(r)==AL.od)&&(!q||((r.no||"")+" "+(r.title||"")+" "+(r.author||"")).toLowerCase().includes(q)))
 .sort((x,y)=>{const a=val(x,sort.k),b=val(y,sort.k);return (a>b?1:a<b?-1:0)*sort.d});
 curRows=rows;for(const id of [...sel])if(!data.some(d=>d.id==id))sel.delete(id);
 $("bd").hidden=!sel.size;$("bd").textContent="Delete selected ("+sel.size+")";$("sa").checked=!!rows.length&&rows.every(r=>sel.has(r.id));
@@ -178,6 +180,19 @@ function addRep(){reps.push({no:"",link:""});drawRep()}
 function drawSess(){$("ss").innerHTML=sess.map((d,i)=>`<div style="display:flex;gap:6px"><input type="date" value="${esc(d)}" onchange="sess[${i}]=this.value"><button type="button" class="ghost" onclick="sess.splice(${i},1);drawSess()">✕</button></div>`).join("")||'<small style="color:var(--mut)">No meeting dates yet</small>'}
 function addSess(){sess.push(today());drawSess()}
 function werr(e){toast("Could not save: "+((e&&e.message)||"you do not have permission to edit."),1)}
+// Filter by sidebar (Category, Committee, Status), search and Sort By. Shared by every page.
+const CATL=[["Legislative Documents",0],["Correspondence and Communications",1],["Barangay Documents",3],["Budget and Financial Docs.",2],["Legal Documents",4],["Reports and Plans",5],["Admin. and Case Docs.",6],["Other Documents",7]];
+let CATF=[];const catOf=r=>(TYG.find(g=>g[1].includes(r.type))||[""])[0];
+$("sbcats").innerHTML=CATL.map(c=>`<label class="ck"><input type="checkbox" value="${esc(TYG[c[1]][0])}"> ${esc(c[0])}</label>`).join("");
+$("sbc").innerHTML='<option value="">Select Committee</option>'+CM.map(m=>`<option>${esc(m)}</option>`).join("");
+$("sbs").innerHTML='<option value="">Select Status</option>'+ST.map(s=>`<option>${esc(s)}</option>`).join("");
+if(!HOME){const P=new URLSearchParams(location.search);F.cm=P.get("cm")||"";F.st=P.get("st")||"";CATF=P.getAll("cat");if(P.get("q"))$("q").value=P.get("q");const sp=P.get("sort");if(sp){const[k,d]=sp.split(":");sort={k,d:+d||1}}}
+function syncSB(){$("sbc").value=F.cm;$("sbs").value=F.st;document.querySelectorAll("#sbcats input").forEach(i=>i.checked=CATF.includes(i.value));const v=sort.k+":"+sort.d;if([...$("tso").options].some(o=>o.value==v))$("tso").value=v}
+function applyF(){const cats=[...document.querySelectorAll("#sbcats input:checked")].map(i=>i.value),cm=$("sbc").value,st=$("sbs").value;
+if(HOME){const p=new URLSearchParams();cats.forEach(c=>p.append("cat",c));if(cm)p.set("cm",cm);if(st)p.set("st",st);location.href=(cats.length&&cats.every(c=>c==TYG[3][0])?"barangay":"legislative")+".html?"+p;return}
+CATF=cats;F.cm=cm;F.st=st;render()}
+$("q").addEventListener(HOME?"keydown":"input",e=>{if(!HOME)return render();if(e.key==="Enter"&&e.target.value.trim())location.href="legislative.html?q="+encodeURIComponent(e.target.value.trim())});
+$("tso").onchange=function(){HOME?location.href="legislative.html?sort="+encodeURIComponent(this.value):srtSel(this.value)};
 const CFG=typeof SB_CONFIG!=="undefined"?SB_CONFIG:null;
 const SB=CFG&&CFG.url&&CFG.key&&!/YOUR-/.test(CFG.url+CFG.key)&&typeof supabase!=="undefined"?supabase.createClient(CFG.url,CFG.key):null;
 const toRow=r=>({id:r.id,no:r.no||"",title:r.title,type:r.type||"",author:r.author||"",status:r.status,committee:r.committee||"",filed:r.filed||null,stage_date:r.stageDate||null,mayor:r.mayor||null,report:r.report||null,report_link:r.reportLink||null,reports:r.reports||[],file_link:r.fileLink||null,time_received:r.timeReceived||null,report_file:r.reportFile||null,remarks:r.remarks||null,sessions:r.sessions||[],updated_at:new Date().toISOString()});
