@@ -99,7 +99,7 @@ dialog{border:1px solid var(--bd);border-radius:10px;padding:20px;background:var
 
 /* Mogpog layout: masthead, maroon navigation bar, Filter by sidebar, search row */
 .mast{background:var(--sub)}.mast img{display:block;width:100%;height:auto}
-.bar{position:sticky;top:0;z-index:10;display:flex;overflow-x:auto;white-space:nowrap;background:var(--pri);color:var(--btx)}
+.bar{position:sticky;top:0;z-index:10;display:flex;overflow-x:auto;white-space:nowrap;background:linear-gradient(var(--pri),var(--btnh));color:var(--btx);font:600 20px var(--fh)}
 .bar a{color:inherit;text-decoration:none;font-size:16px;padding:15px 24px}.bar a:hover{background:#ffffff1f}.bar a.on{background:#ffffff2e}
 .bar .sp{margin-left:auto;display:flex}
 .wrap{display:grid;grid-template-columns:300px minmax(0,1fr);gap:26px;align-items:start;max-width:1700px;margin:0 auto;padding:26px 28px}
